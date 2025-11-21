@@ -238,7 +238,7 @@ class WCAGCheckerApp:
         except ValueError:
             raise ValueError(f"Invalid hex color value: {hex_string}")
 
-    def _generate_web_safe_colors_palette_image(self) -> Image.Image:
+    def _generate_colors_palette_image(self) -> Image.Image:
         """Generates a PIL Image containing the web safe colors palette."""
         num_colors = len(self.balanced_colors)
         rows = (num_colors + self.SWATCHES_PER_ROW - 1) // self.SWATCHES_PER_ROW
@@ -407,7 +407,7 @@ class WCAGCheckerApp:
         )
 
         # Generate and display the web safe colors palette image
-        self.palette_image_pil = self._generate_web_safe_colors_palette_image()
+        self.palette_image_pil = self._generate_colors_palette_image()
         self.palette_image_tk = ImageTk.PhotoImage(self.palette_image_pil)
 
         self.palette_image_label = ttk.Label(parent, image=self.palette_image_tk)

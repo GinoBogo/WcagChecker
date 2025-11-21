@@ -74,7 +74,8 @@ class WCAGCheckerApp:
         """Initializes the WCAG Checker GUI application."""
         self.root = root
         self.root.title("WCAG Checker")
-        self.root.minsize(400, 800)
+        self.root.geometry("600x900")
+        self.root.minsize(600, 800)
 
         self.app_background_color = "#F0F0F0"
 

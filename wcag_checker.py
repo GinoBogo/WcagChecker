@@ -114,82 +114,50 @@ class WCAGCheckerApp:
         self.state_ui_elements = {}
         self._resizing = False
 
-        self.SWATCHES_PER_ROW = 32
+        self.SWATCH_COLUMNS = 32
         self.SWATCH_WIDTH = 16
 
         # fmt: off
-
         self.balanced_colors = [
-    "#000000", "#0A0A0A", "#151515", "#202020", "#2B2B2B", "#363636", "#414141", "#4C4C4C",
-    "#575757", "#626262", "#6D6D6D", "#787878", "#838383", "#8E8E8E", "#999999", "#A4A4A4",
-    "#AFAFAF", "#BABABA", "#C5C5C5", "#C7C7C7", "#CFCFCF", "#D0D0D0", "#D7D7D7", "#DBDBDB",
-    "#DFDFDF", "#E6E6E6", "#E7E7E7", "#EFEFEF", "#F1F1F1", "#F7F7F7", "#FCFCFC", "#FFFFFF",
-    
-    "#0D1B2A", "#1A237E", "#283593", "#0D47A1", "#303F9F", "#3949AB", "#0052CC", "#1565C0",
-    "#3F51B5", "#0066CC", "#1976D2", "#1A3FFF", "#1E4BFF", "#304FFE", "#5C6BC0", "#3D5AFE",
-    "#1E6BFF", "#5472D3", "#2962FF", "#1E88E5", "#2979FF", "#007BFF", "#536DFE", "#2196F3",
-    "#42A5F5", "#64B5F6", "#8C9EFF", "#82B1FF", "#90CAF9", "#80D8FF", "#BBDEFB", "#E3F2FD",
-    
-    "#004D40", "#1B5E20", "#00695C", "#00796B", "#2E7D32", "#388E3C", "#00897B", "#009688",
-    "#43A047", "#28A745", "#34A853", "#4CAF50", "#00C853", "#00D861", "#26A69A", "#00BFA5",
-    "#66BB6A", "#4DB6AC", "#00E676", "#00F582", "#1DE9B6", "#1DF5C2", "#69F0AE", "#81C784",
-    "#A5D6A7", "#64FFDA", "#C8E6C9", "#B9F6CA", "#C5FFD0", "#D1FFD6", "#A7FFEB", "#E8F5E8",
-    
-    "#B71C1C", "#C51162", "#C62828", "#D32F2F", "#D50000", "#DC3545", "#E53935", "#F50057",
-    "#F44336", "#FF1744", "#EF5350", "#FF4081", "#FF5252", "#E57373", "#FF867F", "#EF9A9A",
-    "#FF8A80", "#FF80AB", "#FF9292", "#FF9E9E", "#FFAAAA", "#FFABAD", "#FFB6B6", "#F8BBD0",
-    "#FFC2C2", "#FFCDD2", "#FFD8D8", "#FFCECE", "#FCE4EC", "#FFDADA", "#FFEBEE", "#FFE6E6",
-    
-    "#E64A19", "#E65100", "#F4511E", "#EF6C00", "#FF5722", "#F57C00", "#FF6D00", "#FF6F00",
-    "#FB8C00", "#FF8F00", "#FF9100", "#FF9800", "#FFA000", "#FFAB00", "#FFB300", "#FFC400",
-    "#FFD600", "#FFA726", "#FFB74D", "#FFCA28", "#FFD740", "#FFCC80", "#FFE082", "#FFE0B2",
-    "#FFECB3", "#FFF2C9", "#FFF8DF", "#FFF3E0", "#FFF9F0", "#FFF8E1", "#FFFEF5", "#FFFFFB",
-    
-    "#121B6E", "#2A1B8C", "#2C3487", "#343C8F", "#3A4495", "#7B1FA2", "#454DBD", "#5A3CA9",
-    "#6D47B9", "#8E24AA", "#6200EA", "#9C27B0", "#651FFF", "#6610F2", "#AB47BC", "#7C4DFF",
-    "#9575CD", "#BA68C8", "#B39DDB", "#CE93D8", "#C29EFF", "#CAAAFF", "#D1C4E9", "#D2B6FF",
-    "#DAC2FF", "#E1BEE7", "#E2CEFF", "#EADAFF", "#EDE7F6", "#F2E6FF", "#F3E5F5", "#F9F3FF",
-    
-    "#004D40", "#005A5A", "#006064", "#007D8D", "#00838F", "#009191", "#0097A7", "#17A2B8",
-    "#00ACC1", "#26A69A", "#00B8D4", "#00C0DC", "#00BFA5", "#4DB6AC", "#1DE9B6", "#26C6DA",
-    "#4DD0E1", "#80CBC4", "#64FFDA", "#80DEEA", "#00E5FF", "#18FFFF", "#84FFFF", "#B2DFDB",
-    "#B2EBF2", "#C8F7FC", "#A7FFEB", "#E0F7FA", "#ECFDFF", "#F0FFFC", "#F4FFFE", "#F8FFFF",
-    
-    "#2A1A0A", "#23272A", "#2C2F33", "#075E54", "#006600", "#3B5998", "#6441A5", "#4267B2",
-    "#0E76A8", "#0077B5", "#990000", "#BD081C", "#7B39EC", "#CC0000", "#9146FF", "#128C7E",
-    "#5865F2", "#FF0000", "#33CC33", "#FF3333", "#FF4500", "#FF5700", "#FF6600", "#00FF00",
-    "#1877F2", "#00ACEE", "#1DA1F2", "#25D366", "#34B7F1", "#7289DA", "#99AAB5", "#FFFF00"
-]
-        # fmt: on
-
-        # Remove duplicates while preserving order
-        seen = set()
-        self.balanced_colors = [
-            x for x in self.balanced_colors if not (x in seen or seen.add(x))
+            "#000000", "#080808", "#101010", "#181818", "#202020", "#282828", "#303030", "#383838",
+            "#404040", "#484848", "#505050", "#585858", "#606060", "#686868", "#707070", "#787878",
+            "#808080", "#888888", "#909090", "#989898", "#A0A0A0", "#A8A8A8", "#B0B0B0", "#B8B8B8",
+            "#C0C0C0", "#C8C8C8", "#D0D0D0", "#D8D8D8", "#E0E0E0", "#E8E8E8", "#F0F0F0", "#FFFFFF",
+            "#1A237E", "#283593", "#303F9F", "#0D47A1", "#3949AB", "#3F51B5", "#0052CC", "#1A3FFF",
+            "#1E4BFF", "#1565C0", "#304FFE", "#0066CC", "#3D5AFE", "#2962FF", "#5C6BC0", "#1976D2",
+            "#1E6BFF", "#5472D3", "#536DFE", "#2979FF", "#007BFF", "#1E88E5", "#2196F3", "#42A5F5",
+            "#8C9EFF", "#64B5F6", "#64B5F6", "#82B1FF", "#90CAF9", "#80D8FF", "#BBDEFB", "#E3F2FD",
+            "#004D40", "#1B5E20", "#00695C", "#00796B", "#2E7D32", "#00897B", "#388E3C", "#009688",
+            "#43A047", "#28A745", "#34A853", "#26A69A", "#4CAF50", "#4DB6AC", "#66BB6A", "#00BFA5",
+            "#00C853", "#81C784", "#00D861", "#00E676", "#A5D6A7", "#1DE9B6", "#00F582", "#69F0AE",
+            "#1DF5C2", "#C8E6C9", "#64FFDA", "#B9F6CA", "#A7FFEB", "#C5FFD0", "#E8F5E8", "#D1FFD6",
+            "#B71C1C", "#C51162", "#C62828", "#D50000", "#D32F2F", "#DC3545", "#E53935", "#F50057",
+            "#FF1744", "#F44336", "#EF5350", "#FF4081", "#FF5252", "#E57373", "#FF80AB", "#FF867F",
+            "#FF8A80", "#EF9A9A", "#FF9292", "#FF9E9E", "#FFAAAA", "#FFABAD", "#FFB6B6", "#F8BBD0",
+            "#FFC2C2", "#FFCDD2", "#FFCECE", "#FFD8D8", "#FFDADA", "#FCE4EC", "#FFE6E6", "#FFEBEE",
+            "#E64A19", "#E65100", "#F4511E", "#FF5722", "#EF6C00", "#FF6D00", "#FF6F00", "#F57C00",
+            "#FB8C00", "#FF8F00", "#FF9100", "#FF9800", "#FFA000", "#FFA726", "#FFAB00", "#FFB300",
+            "#FFB74D", "#FFC400", "#FFCA28", "#FFCC80", "#FFD600", "#FFD740", "#FFE082", "#FFE0B2",
+            "#FFECB3", "#FFF2C9", "#FFF3E0", "#FFF8DF", "#FFF8E1", "#FFF9F0", "#FFFEF5", "#FFFFFB",
+            "#121B6E", "#2A1B8C", "#2C3487", "#343C8F", "#3A4495", "#7B1FA2", "#5A3CA9", "#6200EA",
+            "#6610F2", "#8E24AA", "#454DBD", "#651FFF", "#6D47B9", "#9C27B0", "#AB47BC", "#7C4DFF",
+            "#9575CD", "#BA68C8", "#B39DDB", "#CE93D8", "#C29EFF", "#CAAAFF", "#D2B6FF", "#E1BEE7",
+            "#D1C4E9", "#DAC2FF", "#E2CEFF", "#EADAFF", "#F3E5F5", "#EDE7F6", "#F2E6FF", "#F9F3FF",
+            "#004D40", "#005A5A", "#006064", "#007D8D", "#00838F", "#009191", "#0097A7", "#17A2B8",
+            "#26A69A", "#00ACC1", "#4DB6AC", "#00B8D4", "#00BFA5", "#00C0DC", "#26C6DA", "#80CBC4",
+            "#4DD0E1", "#1DE9B6", "#80DEEA", "#00E5FF", "#B2DFDB", "#B2EBF2", "#18FFFF", "#64FFDA",
+            "#84FFFF", "#A7FFEB", "#C8F7FC", "#E0F7FA", "#ECFDFF", "#F0FFFC", "#F4FFFE", "#F8FFFF",
+            "#2A1A0A", "#23272A", "#2C2F33", "#990000", "#075E54", "#6441A5", "#006600", "#3B5998",
+            "#BD081C", "#CC0000", "#7B39EC", "#4267B2", "#0E76A8", "#0077B5", "#9146FF", "#5865F2",
+            "#1877F2", "#128C7E", "#FF0000", "#FF3333", "#FF4500", "#7289DA", "#FF5700", "#FF6600",
+            "#1DA1F2", "#00ACEE", "#99AAB5", "#34B7F1", "#33CC33", "#25D366", "#00FF00", "#FFFF00"
         ]
         # fmt: on
-
-        self._check_for_duplicate_colors()
 
         self.load_window_geometry()
         self.initialize_ui()
         self.refresh_all_displays()
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-    def _check_for_duplicate_colors(self):
-        """Checks for duplicate colors in self.balanced_colors and raises an error if any are found."""
-        seen_colors = set()
-        duplicates = set()
-        for color in self.balanced_colors:
-            if color in seen_colors:
-                duplicates.add(color)
-            else:
-                seen_colors.add(color)
-
-        if duplicates:
-            raise ValueError(
-                f"Duplicate colors found in balanced_colors: {', '.join(sorted(list(duplicates)))}"
-            )
 
     def on_closing(self):
         """Handles the window closing event."""
@@ -241,18 +209,18 @@ class WCAGCheckerApp:
     def _generate_colors_palette_image(self) -> Image.Image:
         """Generates a PIL Image containing the web safe colors palette."""
         num_colors = len(self.balanced_colors)
-        rows = (num_colors + self.SWATCHES_PER_ROW - 1) // self.SWATCHES_PER_ROW
+        rows = (num_colors + self.SWATCH_COLUMNS - 1) // self.SWATCH_COLUMNS
 
         # Calculate image dimensions
-        image_width = self.SWATCHES_PER_ROW * self.SWATCH_WIDTH
+        image_width = self.SWATCH_COLUMNS * self.SWATCH_WIDTH
         image_height = rows * self.SWATCH_WIDTH
 
         image = Image.new("RGB", (image_width, image_height), "#FFFFFF")
         draw = ImageDraw.Draw(image)
 
         for i, color_hex in enumerate(self.balanced_colors):
-            row = i // self.SWATCHES_PER_ROW
-            col = i % self.SWATCHES_PER_ROW
+            row = i // self.SWATCH_COLUMNS
+            col = i % self.SWATCH_COLUMNS
             x1 = col * self.SWATCH_WIDTH
             y1 = row * self.SWATCH_WIDTH
             x2 = x1 + self.SWATCH_WIDTH
@@ -380,7 +348,7 @@ class WCAGCheckerApp:
         col = int(orig_x // self.SWATCH_WIDTH)
         row = int(orig_y // self.SWATCH_WIDTH)  # SWATCH_WIDTH is used for height too
 
-        color_index = row * self.SWATCHES_PER_ROW + col
+        color_index = row * self.SWATCH_COLUMNS + col
 
         if 0 <= color_index < len(self.balanced_colors):
             hex_color = self.balanced_colors[color_index]

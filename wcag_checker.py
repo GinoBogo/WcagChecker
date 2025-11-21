@@ -668,11 +668,11 @@ class WCAGCheckerApp:
         bg_compliance = ttk.Label(
             parent, text="", font=("Courier", 10, "bold"), anchor="center"
         )
-        bg_compliance.grid(row=row, column=4, sticky=tk.W, padx=5)
+        bg_compliance.grid(row=row, column=5, sticky=tk.W, padx=5)
         fg_compliance = ttk.Label(
             parent, text="", font=("Courier", 10, "bold"), anchor="center"
         )
-        fg_compliance.grid(row=row, column=5, sticky=tk.W, padx=5)
+        fg_compliance.grid(row=row, column=6, sticky=tk.W, padx=5)
 
         self.state_ui_elements[state_key] = {
             "background_hex_var": bg_hex_var,

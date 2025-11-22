@@ -126,12 +126,12 @@ class WCAGCheckerApp:
             "#4252AE", "#4758B4", "#4C5EBA", "#5164C0", "#566AC6", "#5B70CC", "#6076D2", "#657CD8",
             "#6A82DE", "#6F88E4", "#748EEA", "#7994F0", "#7E9AF6", "#83A0FC", "#88A6FF", "#8DACFF",
             "#92B2FF", "#97B8FF", "#9CBEFF", "#A1C4FF", "#A6CAFF", "#ABD0FF", "#B0D6FF", "#DBEFFF",
-                    # Row 2
+            # Row 2
             "#004D40", "#005446", "#005C4C", "#006452", "#006C58", "#00745E", "#007C64", "#00846A",
             "#008C70", "#009476", "#009C7C", "#00A482", "#00AC88", "#00B48E", "#00BC94", "#00C49A",
             "#00CCA0", "#00D4A6", "#00DCAC", "#00E4B2", "#00ECB8", "#00F4BE", "#00FCC4", "#1AFFCA",
             "#34FFD0", "#4EFFD6", "#68FFDC", "#82FFE2", "#9CFFE8", "#B6FFEE", "#D0FFF4", "#EAFFEE",
-                    # Row 3
+            # Row 3
             "#991818", "#A01D1D", "#A72222", "#AE2727", "#B52C2C", "#BC3131", "#C33636", "#CA3B3B",
             "#D14040", "#D84545", "#DF4A4A", "#E64F4F", "#ED5454", "#F45959", "#FB5E5E", "#FF6363",
             "#FF6E6E", "#FF7979", "#FF8484", "#FF8F8F", "#FF9A9A", "#FFA5A5", "#FFB0B0", "#FFBBBB",
@@ -151,7 +151,7 @@ class WCAGCheckerApp:
             "#009292", "#009999", "#00A0A0", "#00A7A7", "#00AEAE", "#00B5B5", "#00BCBC", "#00C3C3",
             "#00CACA", "#00D1D1", "#00D8D8", "#00DFDF", "#00E6E6", "#00EDED", "#00F4F4", "#00FBFB",
             "#47FFFF", "#77FFFF", "#A7FFFF", "#C7FFFF", "#D7FFFF", "#DFFFFF", "#E7FFFF", "#E0F7FA",
-                    # Row 7
+            # Row 7
             "#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#CCFF00", "#99FF00", "#66FF00",
             "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF",
             "#0099FF", "#0066FF", "#0033FF", "#0000FF", "#3300FF", "#6600FF", "#9900FF", "#CC00FF",
@@ -170,6 +170,8 @@ class WCAGCheckerApp:
         self.save_window_geometry()
         self.root.destroy()
 
+    # endregion
+    # region ----------------- Configuration and State Management -----------------
     def save_window_geometry(self):
         """Saves the current window geometry to a config file."""
         config = cfg.ConfigParser()
@@ -187,54 +189,90 @@ class WCAGCheckerApp:
             if "WINDOW" in config and "geometry" in config["WINDOW"]:
                 self.root.geometry(config["WINDOW"]["geometry"])
 
-    def set_default_button_color(self, hex_color: str):
-        """Sets the default button background color and refreshes the display."""
-        self.state_color_settings["default"]["background"] = hex_color
-        self.refresh_all_displays()
+    def load_settings(self):
+        """Loads color settings from a file."""
+        filepath = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Load Color Settings",
+        )
 
-    def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
-        """Converts an RGB color tuple to a hex string."""
-        return "#{:02X}{:02X}{:02X}".format(*color)
-
-    def hex_to_rgb(self, hex_string: str) -> Tuple[int, int, int]:
-        """Converts a hex color string to an RGB tuple."""
-        color_string = hex_string.strip().lstrip("#")
-
-        if len(color_string) != 6:
-            raise ValueError(f"Invalid hex color length: {hex_string}")
+        if not filepath:
+            return
 
         try:
-            return (
-                int(color_string[0:2], 16),
-                int(color_string[2:4], 16),
-                int(color_string[4:6], 16),
+            with open(filepath, "r") as f:
+                settings = json.load(f)
+
+            # Robust validation
+            if not isinstance(settings, dict):
+                raise ValueError("Settings file is not a valid JSON object.")
+
+            if (
+                "app_background_color" not in settings
+                or "state_color_settings" not in settings
+            ):
+                raise ValueError("Missing required keys in settings file.")
+
+            if not isinstance(settings["state_color_settings"], dict):
+                raise ValueError("'state_color_settings' should be a dictionary.")
+
+            for state_key, _ in self.button_state_definitions:
+                if state_key not in settings["state_color_settings"]:
+                    raise ValueError(f"Missing settings for state: {state_key}")
+                if (
+                    "background" not in settings["state_color_settings"][state_key]
+                    or "foreground" not in settings["state_color_settings"][state_key]
+                ):
+                    raise ValueError(
+                        f"Missing 'background' or 'foreground' for state: {state_key}"
+                    )
+
+            self.app_background_color = settings["app_background_color"]
+            self.state_color_settings = settings["state_color_settings"]
+
+            self.restore_app_background_color = settings["app_background_color"]
+            self.restore_state_color_settings = copy.deepcopy(
+                settings["state_color_settings"]
             )
-        except ValueError:
-            raise ValueError(f"Invalid hex color value: {hex_string}")
 
-    def _generate_colors_palette_image(self) -> Image.Image:
-        """Generates a PIL Image containing the web safe colors palette."""
-        num_colors = len(self.balanced_colors)
-        rows = (num_colors + self.SWATCH_COLUMNS - 1) // self.SWATCH_COLUMNS
+            self.file_loaded = True
+            self.refresh_all_displays()
+            self._update_compliance_indicators()
+            messagebox.showinfo("Load Complete", "Settings loaded successfully.")
 
-        # Calculate image dimensions
-        image_width = self.SWATCH_COLUMNS * self.SWATCH_WIDTH
-        image_height = rows * self.SWATCH_WIDTH
+        except (ValueError, json.JSONDecodeError) as e:
+            messagebox.showerror(
+                "Invalid File",
+                f"The selected file is not a valid settings file.\n\n{e}",
+            )
+        except Exception as e:
+            messagebox.showerror("Load Error", f"Failed to load settings: {e}")
 
-        image = Image.new("RGB", (image_width, image_height), "#FFFFFF")
-        draw = ImageDraw.Draw(image)
+    def save_settings(self):
+        """Saves the current color settings to a file."""
+        settings = {
+            "app_background_color": self.app_background_color,
+            "state_color_settings": self.state_color_settings,
+        }
 
-        for i, color_hex in enumerate(self.balanced_colors):
-            row = i // self.SWATCH_COLUMNS
-            col = i % self.SWATCH_COLUMNS
-            x1 = col * self.SWATCH_WIDTH
-            y1 = row * self.SWATCH_WIDTH
-            x2 = x1 + self.SWATCH_WIDTH
-            y2 = y1 + self.SWATCH_WIDTH
-            draw.rectangle([x1, y1, x2, y2], fill=color_hex)
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Save Color Settings",
+        )
 
-        return image
+        if not filepath:
+            return
 
+        try:
+            with open(filepath, "w") as f:
+                json.dump(settings, f, indent=4)
+            messagebox.showinfo("Save Complete", f"Settings saved to {filepath}")
+        except Exception as e:
+            messagebox.showerror("Save Error", f"Failed to save settings: {e}")
+
+    # endregion
+    # region ------------------------- UI Initialization --------------------------
     def initialize_ui(self):
         """Sets up the main UI components by calling helper methods."""
         main_frame = self._create_main_frames()
@@ -274,105 +312,6 @@ class WCAGCheckerApp:
         preview_frame.columnconfigure(0, weight=1)
         preview_frame.rowconfigure(1, weight=1)
         return preview_frame
-
-    def _resize_palette_image(self, event=None):
-        """Resizes the palette image to fit the label width while maintaining aspect ratio."""
-        if self._resizing:
-            return
-        self._resizing = True
-        try:
-            if not hasattr(self, "palette_image_pil") or not self.palette_image_pil:
-                return
-
-            new_width = self.palette_image_label.winfo_width()
-
-            if new_width <= 1:
-                return
-
-            original_width, original_height = self.palette_image_pil.size
-
-            if original_width == 0:
-                return
-
-            aspect_ratio = original_height / original_width
-            new_height = int(new_width * aspect_ratio)
-
-            if new_height <= 0:
-                return
-
-            resized_image = self.palette_image_pil.resize(
-                (new_width, new_height), Image.Resampling.LANCZOS
-            )
-            self.palette_image_tk = ImageTk.PhotoImage(resized_image)
-            self.palette_image_label.config(image=self.palette_image_tk)
-        finally:
-            self._resizing = False
-
-    def _on_palette_click(self, event):
-        """Handles clicks on the color palette to select a color."""
-        focused_widget = self.root.focus_get()
-
-        # Check if the focused widget is one of our color entries
-        is_color_entry = False
-        if focused_widget == self.app_background_hex_entry:
-            is_color_entry = True
-        else:
-            for state_key in self.state_ui_elements:
-                if focused_widget in (
-                    self.state_ui_elements[state_key]["background_hex_entry"],
-                    self.state_ui_elements[state_key]["foreground_hex_entry"],
-                ):
-                    is_color_entry = True
-                    break
-
-        if not is_color_entry:
-            return  # Do nothing if a color entry is not focused
-
-        # Calculate clicked color
-        label_width = self.palette_image_label.winfo_width()
-        original_width, original_height = self.palette_image_pil.size
-
-        if original_width == 0:
-            return
-
-        aspect_ratio = original_height / original_width
-        label_height = int(label_width * aspect_ratio)
-
-        # Click coordinates relative to the resized image
-        x, y = event.x, event.y
-
-        # Ignore clicks outside the image area
-        if not (0 <= x < label_width and 0 <= y < label_height):
-            return
-
-        scale_x = label_width / original_width
-        scale_y = label_height / original_height
-
-        orig_x = x / scale_x
-        orig_y = y / scale_y
-
-        col = int(orig_x // self.SWATCH_WIDTH)
-        row = int(orig_y // self.SWATCH_WIDTH)  # SWATCH_WIDTH is used for height too
-
-        color_index = row * self.SWATCH_COLUMNS + col
-
-        if 0 <= color_index < len(self.balanced_colors):
-            hex_color = self.balanced_colors[color_index]
-
-            # Now update the focused entry
-            if focused_widget == self.app_background_hex_entry:
-                self.app_background_hex_var.set(hex_color)
-                self.update_app_background_from_hex_entry(None)
-            else:
-                for state_key, ui_elements in self.state_ui_elements.items():
-                    if focused_widget == ui_elements["background_hex_entry"]:
-                        ui_elements["background_hex_var"].set(hex_color)
-                        self.update_color_from_hex_entry(state_key, "background")
-                        break
-                    elif focused_widget == ui_elements["foreground_hex_entry"]:
-                        ui_elements["foreground_hex_var"].set(hex_color)
-                        self.update_color_from_hex_entry(state_key, "foreground")
-                        break
 
     def _create_color_palette_widgets(self, parent):
         """Creates the widgets for the color palette selection."""
@@ -507,6 +446,44 @@ class WCAGCheckerApp:
             "foreground_compliance_label": fg_compliance,
         }
 
+    def _create_preview_area(self, parent):
+        """Creates the application preview area with placeholder buttons."""
+        ttk.Label(parent, text="Application Preview", font=("Arial", 12, "bold")).grid(
+            row=0, column=0, sticky=tk.W
+        )
+        preview_container = tk.Frame(parent)
+        preview_container.grid(
+            row=1, column=0, sticky=tk.N + tk.S + tk.E + tk.W, pady=10
+        )
+        preview_container.columnconfigure(0, weight=1)
+        preview_container.rowconfigure(0, weight=1)
+        preview_container.config(height=300)
+        preview_container.grid_propagate(False)
+
+        self.preview_display_frame = tk.Frame(preview_container, relief="sunken", bd=2)
+        self.preview_display_frame.grid(
+            row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W
+        )
+        self.preview_display_frame.columnconfigure(0, weight=1)
+        self.preview_display_frame.rowconfigure(0, weight=1)
+
+        self.preview_buttons_container = tk.Frame(self.preview_display_frame)
+        self.preview_buttons_container.pack(fill="both", expand=True)
+        self.preview_buttons_container.columnconfigure(0, weight=1)
+
+        self.preview_button_elements = {}
+        for i, (state_key, desc) in enumerate(self.button_state_definitions):
+            button = tk.Button(
+                self.preview_buttons_container,
+                text=desc,
+                cursor="hand2",
+                width=24,
+                height=3,
+            )
+            button.grid(row=i, column=0, pady=8, sticky="n")
+            self.preview_buttons_container.grid_rowconfigure(i, weight=1)
+            self.preview_button_elements[state_key] = button
+
     def _create_control_buttons(self, parent):
         """Creates the Open, Save, Random, Validate, Correct, and Restore action buttons."""
         buttons_inner_frame = ttk.Frame(parent)
@@ -555,70 +532,129 @@ class WCAGCheckerApp:
             command=self.restore_defaults,
         ).pack(side=tk.LEFT, padx=5)
 
-    def _create_preview_area(self, parent):
-        """Creates the application preview area with placeholder buttons."""
-        ttk.Label(parent, text="Application Preview", font=("Arial", 12, "bold")).grid(
-            row=0, column=0, sticky=tk.W
-        )
-        preview_container = tk.Frame(parent)
-        preview_container.grid(
-            row=1, column=0, sticky=tk.N + tk.S + tk.E + tk.W, pady=10
-        )
-        preview_container.columnconfigure(0, weight=1)
-        preview_container.rowconfigure(0, weight=1)
-        preview_container.config(height=300)
-        preview_container.grid_propagate(False)
+    def _generate_colors_palette_image(self) -> Image.Image:
+        """Generates a PIL Image containing the web safe colors palette."""
+        num_colors = len(self.balanced_colors)
+        rows = (num_colors + self.SWATCH_COLUMNS - 1) // self.SWATCH_COLUMNS
 
-        self.preview_display_frame = tk.Frame(preview_container, relief="sunken", bd=2)
-        self.preview_display_frame.grid(
-            row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W
-        )
-        self.preview_display_frame.columnconfigure(0, weight=1)
-        self.preview_display_frame.rowconfigure(0, weight=1)
+        # Calculate image dimensions
+        image_width = self.SWATCH_COLUMNS * self.SWATCH_WIDTH
+        image_height = rows * self.SWATCH_WIDTH
 
-        self.preview_buttons_container = tk.Frame(self.preview_display_frame)
-        self.preview_buttons_container.pack(fill="both", expand=True)
-        self.preview_buttons_container.columnconfigure(0, weight=1)
+        image = Image.new("RGB", (image_width, image_height), "#FFFFFF")
+        draw = ImageDraw.Draw(image)
 
-        self.preview_button_elements = {}
-        for i, (state_key, desc) in enumerate(self.button_state_definitions):
-            button = tk.Button(
-                self.preview_buttons_container,
-                text=desc,
-                cursor="hand2",
-                width=24,
-                height=3,
+        for i, color_hex in enumerate(self.balanced_colors):
+            row = i // self.SWATCH_COLUMNS
+            col = i % self.SWATCH_COLUMNS
+            x1 = col * self.SWATCH_WIDTH
+            y1 = row * self.SWATCH_WIDTH
+            x2 = x1 + self.SWATCH_WIDTH
+            y2 = y1 + self.SWATCH_WIDTH
+            draw.rectangle([x1, y1, x2, y2], fill=color_hex)
+
+        return image
+
+    # endregion
+    # region ---------------------- UI Event Handlers and Actions -----------------------
+    def _resize_palette_image(self, event=None):
+        """Resizes the palette image to fit the label width while maintaining aspect ratio."""
+        if self._resizing:
+            return
+        self._resizing = True
+        try:
+            if not hasattr(self, "palette_image_pil") or not self.palette_image_pil:
+                return
+
+            new_width = self.palette_image_label.winfo_width()
+
+            if new_width <= 1:
+                return
+
+            original_width, original_height = self.palette_image_pil.size
+
+            if original_width == 0:
+                return
+
+            aspect_ratio = original_height / original_width
+            new_height = int(new_width * aspect_ratio)
+
+            if new_height <= 0:
+                return
+
+            resized_image = self.palette_image_pil.resize(
+                (new_width, new_height), Image.Resampling.LANCZOS
             )
-            button.grid(row=i, column=0, pady=8, sticky="n")
-            self.preview_buttons_container.grid_rowconfigure(i, weight=1)
-            self.preview_button_elements[state_key] = button
+            self.palette_image_tk = ImageTk.PhotoImage(resized_image)
+            self.palette_image_label.config(image=self.palette_image_tk)
+        finally:
+            self._resizing = False
 
-    def refresh_all_displays(self):
-        """Refreshes all UI elements with the current color settings."""
-        self.app_background_hex_var.set(self.app_background_color)
+    def _on_palette_click(self, event):
+        """Handles clicks on the color palette to select a color."""
+        focused_widget = self.root.focus_get()
 
-        preview_hex = self.app_background_color
-        self.preview_display_frame.configure(bg=preview_hex)
-        self.preview_buttons_container.configure(bg=preview_hex)
-        self.preview_buttons_container.grid_columnconfigure(0, weight=1)
+        # Check if the focused widget is one of our color entries
+        is_color_entry = False
+        if focused_widget == self.app_background_hex_entry:
+            is_color_entry = True
+        else:
+            for state_key in self.state_ui_elements:
+                if focused_widget in (
+                    self.state_ui_elements[state_key]["background_hex_entry"],
+                    self.state_ui_elements[state_key]["foreground_hex_entry"],
+                ):
+                    is_color_entry = True
+                    break
 
-        for state_key, ui_elements in self.state_ui_elements.items():
-            background_color = self.state_color_settings[state_key]["background"]
-            foreground_color = self.state_color_settings[state_key]["foreground"]
+        if not is_color_entry:
+            return  # Do nothing if a color entry is not focused
 
-            ui_elements["background_hex_var"].set(background_color)
-            ui_elements["foreground_hex_var"].set(foreground_color)
+        # Calculate clicked color
+        label_width = self.palette_image_label.winfo_width()
+        original_width, original_height = self.palette_image_pil.size
 
-            preview_button = self.preview_button_elements[state_key]
-            preview_button.configure(
-                bg=background_color,
-                fg=foreground_color,
-                activebackground=background_color,
-                activeforeground=foreground_color,
-                relief="raised",
-                font=("Arial", 11),
-                text=self.state_descriptions[state_key],
-            )
+        if original_width == 0:
+            return
+
+        aspect_ratio = original_height / original_width
+        label_height = int(label_width * aspect_ratio)
+
+        # Click coordinates relative to the resized image
+        x, y = event.x, event.y
+
+        # Ignore clicks outside the image area
+        if not (0 <= x < label_width and 0 <= y < label_height):
+            return
+
+        scale_x = label_width / original_width
+        scale_y = label_height / original_height
+
+        orig_x = x / scale_x
+        orig_y = y / scale_y
+
+        col = int(orig_x // self.SWATCH_WIDTH)
+        row = int(orig_y // self.SWATCH_WIDTH)  # SWATCH_WIDTH is used for height too
+
+        color_index = row * self.SWATCH_COLUMNS + col
+
+        if 0 <= color_index < len(self.balanced_colors):
+            hex_color = self.balanced_colors[color_index]
+
+            # Now update the focused entry
+            if focused_widget == self.app_background_hex_entry:
+                self.app_background_hex_var.set(hex_color)
+                self.update_app_background_from_hex_entry(None)
+            else:
+                for state_key, ui_elements in self.state_ui_elements.items():
+                    if focused_widget == ui_elements["background_hex_entry"]:
+                        ui_elements["background_hex_var"].set(hex_color)
+                        self.update_color_from_hex_entry(state_key, "background")
+                        break
+                    elif focused_widget == ui_elements["foreground_hex_entry"]:
+                        ui_elements["foreground_hex_var"].set(hex_color)
+                        self.update_color_from_hex_entry(state_key, "foreground")
+                        break
 
     def update_app_background_from_hex_entry(self, _event):
         """Updates the app background color from the hex entry field."""
@@ -676,6 +712,8 @@ class WCAGCheckerApp:
             self.state_color_settings[state_key][color_type] = color[1]
             self.refresh_all_displays()
 
+    # endregion
+    # region ------------------------ Core Application Logic ------------------------
     def check_contrast_compliance(
         self,
         foreground_color: Tuple[int, int, int],
@@ -688,11 +726,6 @@ class WCAGCheckerApp:
             foreground_color, background_color, level="AA", size="normal"
         )
         return is_aa_compliant, contrast_ratio
-
-    @staticmethod
-    def _cast_color_list(color_list: list[int]) -> Tuple[int, int, int]:
-        """Casts a list of 3 integers to a fixed-size tuple for type checking."""
-        return cast(Tuple[int, int, int], tuple(color_list))
 
     def adjust_color_for_contrast(
         self,
@@ -736,24 +769,27 @@ class WCAGCheckerApp:
             ),
         )
 
-    def update_compliance_display(
-        self, label: ttk.Label, is_compliant: bool, ratio: float
-    ):
-        """Updates a label to display compliance status and contrast ratio."""
-        if is_compliant:
-            label.config(
-                text=f"{ratio:7.2f}:1",
-                foreground="green",
-                anchor="center",
-                font=("Courier", 10, "bold"),
-            )
-        else:
-            label.config(
-                text=f"{ratio:7.2f}:1",
-                foreground="red",
-                anchor="center",
-                font=("Courier", 10, "bold"),
-            )
+    def find_suitable_foreground_color(
+        self,
+        background_color: Tuple[int, int, int],
+        current_foreground_color: Tuple[int, int, int],
+        minimum_ratio: float = 4.5,
+    ) -> Tuple[Tuple[int, int, int], float]:
+        """Finds a compliant foreground color for a given background."""
+        high_contrast_colors = [
+            "#FFFFFF",
+            "#000000",
+        ]
+
+        for test_color_hex in high_contrast_colors:
+            test_color_rgb = self.hex_to_rgb(test_color_hex)
+            contrast = get_contrast_ratio(test_color_rgb, background_color)
+            if contrast >= minimum_ratio:
+                return test_color_rgb, contrast
+
+        return self.adjust_color_for_contrast(
+            current_foreground_color, background_color, minimum_ratio
+        )
 
     def fix_colors_for_state(self, state_key: str) -> int:
         """Corrects the colors for a given state to meet compliance."""
@@ -804,27 +840,53 @@ class WCAGCheckerApp:
                 fixes_applied += 1
         return fixes_applied
 
-    def find_suitable_foreground_color(
-        self,
-        background_color: Tuple[int, int, int],
-        current_foreground_color: Tuple[int, int, int],
-        minimum_ratio: float = 4.5,
-    ) -> Tuple[Tuple[int, int, int], float]:
-        """Finds a compliant foreground color for a given background."""
-        high_contrast_colors = [
-            "#FFFFFF",
-            "#000000",
-        ]
+    # endregion
+    # region ---------------------- UI Update and Refresh Methods -----------------------
+    def refresh_all_displays(self):
+        """Refreshes all UI elements with the current color settings."""
+        self.app_background_hex_var.set(self.app_background_color)
 
-        for test_color_hex in high_contrast_colors:
-            test_color_rgb = self.hex_to_rgb(test_color_hex)
-            contrast = get_contrast_ratio(test_color_rgb, background_color)
-            if contrast >= minimum_ratio:
-                return test_color_rgb, contrast
+        preview_hex = self.app_background_color
+        self.preview_display_frame.configure(bg=preview_hex)
+        self.preview_buttons_container.configure(bg=preview_hex)
+        self.preview_buttons_container.grid_columnconfigure(0, weight=1)
 
-        return self.adjust_color_for_contrast(
-            current_foreground_color, background_color, minimum_ratio
-        )
+        for state_key, ui_elements in self.state_ui_elements.items():
+            background_color = self.state_color_settings[state_key]["background"]
+            foreground_color = self.state_color_settings[state_key]["foreground"]
+
+            ui_elements["background_hex_var"].set(background_color)
+            ui_elements["foreground_hex_var"].set(foreground_color)
+
+            preview_button = self.preview_button_elements[state_key]
+            preview_button.configure(
+                bg=background_color,
+                fg=foreground_color,
+                activebackground=background_color,
+                activeforeground=foreground_color,
+                relief="raised",
+                font=("Arial", 11),
+                text=self.state_descriptions[state_key],
+            )
+
+    def update_compliance_display(
+        self, label: ttk.Label, is_compliant: bool, ratio: float
+    ):
+        """Updates a label to display compliance status and contrast ratio."""
+        if is_compliant:
+            label.config(
+                text=f"{ratio:7.2f}:1",
+                foreground="green",
+                anchor="center",
+                font=("Courier", 10, "bold"),
+            )
+        else:
+            label.config(
+                text=f"{ratio:7.2f}:1",
+                foreground="red",
+                anchor="center",
+                font=("Courier", 10, "bold"),
+            )
 
     def _update_compliance_indicators(self) -> bool:
         """Checks all color combinations and updates the compliance indicators."""
@@ -863,6 +925,8 @@ class WCAGCheckerApp:
                 all_compliant = False
         return all_compliant
 
+    # endregion
+    # region ------------------------ Control Button Commands -------------------------
     def validate_compliance(self):
         """Checks all color combinations and displays a compliance summary."""
         if self._update_compliance_indicators():
@@ -934,87 +998,32 @@ class WCAGCheckerApp:
         self.refresh_all_displays()
         self._update_compliance_indicators()
 
-    def save_settings(self):
-        """Saves the current color settings to a file."""
-        settings = {
-            "app_background_color": self.app_background_color,
-            "state_color_settings": self.state_color_settings,
-        }
+    # endregion
+    # region ----------------------------- Utilities ------------------------------
+    def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
+        """Converts an RGB color tuple to a hex string."""
+        return "#{:02X}{:02X}{:02X}".format(*color)
 
-        filepath = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            title="Save Color Settings",
-        )
+    def hex_to_rgb(self, hex_string: str) -> Tuple[int, int, int]:
+        """Converts a hex color string to an RGB tuple."""
+        color_string = hex_string.strip().lstrip("#")
 
-        if not filepath:
-            return
+        if len(color_string) != 6:
+            raise ValueError(f"Invalid hex color length: {hex_string}")
 
         try:
-            with open(filepath, "w") as f:
-                json.dump(settings, f, indent=4)
-            messagebox.showinfo("Save Complete", f"Settings saved to {filepath}")
-        except Exception as e:
-            messagebox.showerror("Save Error", f"Failed to save settings: {e}")
-
-    def load_settings(self):
-        """Loads color settings from a file."""
-        filepath = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            title="Load Color Settings",
-        )
-
-        if not filepath:
-            return
-
-        try:
-            with open(filepath, "r") as f:
-                settings = json.load(f)
-
-            # Robust validation
-            if not isinstance(settings, dict):
-                raise ValueError("Settings file is not a valid JSON object.")
-
-            if (
-                "app_background_color" not in settings
-                or "state_color_settings" not in settings
-            ):
-                raise ValueError("Missing required keys in settings file.")
-
-            if not isinstance(settings["state_color_settings"], dict):
-                raise ValueError("'state_color_settings' should be a dictionary.")
-
-            for state_key, _ in self.button_state_definitions:
-                if state_key not in settings["state_color_settings"]:
-                    raise ValueError(f"Missing settings for state: {state_key}")
-                if (
-                    "background" not in settings["state_color_settings"][state_key]
-                    or "foreground" not in settings["state_color_settings"][state_key]
-                ):
-                    raise ValueError(
-                        f"Missing 'background' or 'foreground' for state: {state_key}"
-                    )
-
-            self.app_background_color = settings["app_background_color"]
-            self.state_color_settings = settings["state_color_settings"]
-
-            self.restore_app_background_color = settings["app_background_color"]
-            self.restore_state_color_settings = copy.deepcopy(
-                settings["state_color_settings"]
+            return (
+                int(color_string[0:2], 16),
+                int(color_string[2:4], 16),
+                int(color_string[4:6], 16),
             )
+        except ValueError:
+            raise ValueError(f"Invalid hex color value: {hex_string}")
 
-            self.file_loaded = True
-            self.refresh_all_displays()
-            self._update_compliance_indicators()
-            messagebox.showinfo("Load Complete", "Settings loaded successfully.")
-
-        except (ValueError, json.JSONDecodeError) as e:
-            messagebox.showerror(
-                "Invalid File",
-                f"The selected file is not a valid settings file.\n\n{e}",
-            )
-        except Exception as e:
-            messagebox.showerror("Load Error", f"Failed to load settings: {e}")
+    @staticmethod
+    def _cast_color_list(color_list: list[int]) -> Tuple[int, int, int]:
+        """Casts a list of 3 integers to a fixed-size tuple for type checking."""
+        return cast(Tuple[int, int, int], tuple(color_list))
 
 
 def main() -> None:

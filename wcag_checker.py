@@ -13,6 +13,7 @@ Author: Gino Bogo
 import configparser as cfg
 import json
 import os
+import random
 import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from typing import Tuple, cast
@@ -512,7 +513,7 @@ class WCAGCheckerApp:
         }
 
     def _create_control_buttons(self, parent):
-        """Creates the Open, Save, Restore, and Correct action buttons."""
+        """Creates the Open, Save, Random, Validate, Correct, and Restore action buttons."""
         buttons_inner_frame = ttk.Frame(parent)
         buttons_inner_frame.pack(expand=True, anchor="center")
 
@@ -520,29 +521,43 @@ class WCAGCheckerApp:
             buttons_inner_frame,
             text="Open",
             cursor="hand2",
-            width=15,
+            width=10,
             command=self.load_settings,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Save",
             cursor="hand2",
-            width=15,
+            width=10,
             command=self.save_settings,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
-            text="Restore",
+            text="Random",
             cursor="hand2",
-            width=15,
-            command=self.restore_defaults,
+            width=10,
+            command=self.random_colors,
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            buttons_inner_frame,
+            text="Validate",
+            cursor="hand2",
+            width=10,
+            command=self.validate_compliance,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Correct",
             cursor="hand2",
-            width=15,
+            width=10,
             command=self.correct_issues,
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            buttons_inner_frame,
+            text="Restore",
+            cursor="hand2",
+            width=10,
+            command=self.restore_defaults,
         ).pack(side=tk.LEFT, padx=5)
 
     def _create_preview_area(self, parent):
@@ -925,6 +940,20 @@ class WCAGCheckerApp:
             "Reset Complete", "All colors have been restored to defaults."
         )
         self.validate_compliance()
+
+    def random_colors(self):
+        """Sets all editable colors to random values."""
+
+        def get_random_hex_color():
+            return f"#{random.randint(0, 0xFFFFFF):06x}"
+
+        self.app_background_color = get_random_hex_color()
+        for state_key in self.state_color_settings:
+            self.state_color_settings[state_key]["background"] = get_random_hex_color()
+            self.state_color_settings[state_key]["foreground"] = get_random_hex_color()
+
+        self.refresh_all_displays()
+        self._update_compliance_indicators()
 
     def save_settings(self):
         """Saves the current color settings to a file."""

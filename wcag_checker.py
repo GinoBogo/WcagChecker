@@ -269,15 +269,51 @@ class WCAGCheckerApp:
             messagebox.showerror("Save Error", f"Failed to save settings: {e}")
 
     def random_colors(self):
-        """Sets all editable colors to random values."""
+        """Sets all editable colors to random values from the palette, ensuring WCAG compliance."""
 
-        def get_random_hex_color():
-            return f"#{random.randint(0, 0xFFFFFF):06x}"
+        # 1. Select a light app_background_color from self.balanced_colors
+        # Calculate luminance for each color and filter for light ones (Luminance > 0.5)
+        light_colors = [hex_color for hex_color in self.balanced_colors if calculate_luminance(self.hex_to_rgb(hex_color)) > 0.5]
 
-        self.app_background_color = get_random_hex_color()
+        if light_colors:
+            self.app_background_color = random.choice(light_colors)
+        else:
+            # Fallback if no sufficiently light colors are found (should not happen with balanced_colors)
+            self.app_background_color = random.choice(["#F0F0F0", "#FFFFFF"]) # Robust default light colors
+
+        app_bg_rgb = self.hex_to_rgb(self.app_background_color)
+
         for state_key in self.state_color_settings:
-            self.state_color_settings[state_key]["background"] = get_random_hex_color()
-            self.state_color_settings[state_key]["foreground"] = get_random_hex_color()
+            # 2. Determine a compliant darker button background based on app_background_color
+            button_bg_rgb = app_bg_rgb # Start with app background color
+            min_contrast_button_vs_app_bg = 3.0 # WCAG AA for large text (buttons often have large text)
+            MAX_DARK_ATTEMPTS = 50
+
+            # Try to find a compliant darker background by iteratively darkening
+            for _ in range(MAX_DARK_ATTEMPTS):
+                current_contrast = get_contrast_ratio(button_bg_rgb, app_bg_rgb)
+                lum_app_bg = calculate_luminance(app_bg_rgb)
+                lum_button_bg = calculate_luminance(button_bg_rgb)
+
+                # Check if compliant and actually darker than app background
+                if (current_contrast >= min_contrast_button_vs_app_bg) and (lum_button_bg < lum_app_bg):
+                    break
+                
+                # Darken the color components by 10
+                darkened_rgb = tuple(max(0, c - 10) for c in button_bg_rgb)
+                if darkened_rgb == button_bg_rgb: # If no component changed, can't darken further
+                    break
+                button_bg_rgb = darkened_rgb
+            else:
+                # Fallback if a compliant darker color couldn't be found
+                button_bg_rgb = self.hex_to_rgb("#4682B4") # Steel Blue as a robust default compliant darker color
+
+            self.state_color_settings[state_key]["background"] = self.rgb_to_hex(button_bg_rgb)
+
+            # 3. Find a compliant foreground color for the button (text on button)
+            # Starting with white as preferred, then black, then adjust
+            new_fg_rgb, _ = self.find_suitable_foreground_color(button_bg_rgb, self.hex_to_rgb("#FFFFFF"))
+            self.state_color_settings[state_key]["foreground"] = self.rgb_to_hex(new_fg_rgb)
 
         self.refresh_all_displays()
         self._update_compliance_indicators()
@@ -984,8 +1020,6 @@ class WCAGCheckerApp:
                 "Reset Complete", "The default color set has been restored."
             )
         self.validate_compliance()
-
-
 
     def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
         """Converts an RGB color tuple to a hex string."""

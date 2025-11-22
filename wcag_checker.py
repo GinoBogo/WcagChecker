@@ -119,38 +119,46 @@ class WCAGCheckerApp:
 
         # fmt: off
         self.balanced_colors = [
+            # Row 0
             "#000000", "#080808", "#101010", "#181818", "#202020", "#282828", "#303030", "#383838",
             "#404040", "#484848", "#505050", "#585858", "#606060", "#686868", "#707070", "#787878",
             "#808080", "#888888", "#909090", "#989898", "#A0A0A0", "#A8A8A8", "#B0B0B0", "#B8B8B8",
             "#C0C0C0", "#C8C8C8", "#D0D0D0", "#D8D8D8", "#E0E0E0", "#E8E8E8", "#F0F0F0", "#FFFFFF",
-            "#1A237E", "#283593", "#303F9F", "#0D47A1", "#3949AB", "#3F51B5", "#0052CC", "#1A3FFF",
-            "#1E4BFF", "#1565C0", "#304FFE", "#0066CC", "#3D5AFE", "#2962FF", "#5C6BC0", "#1976D2",
-            "#1E6BFF", "#5472D3", "#536DFE", "#2979FF", "#007BFF", "#1E88E5", "#2196F3", "#42A5F5",
-            "#8C9EFF", "#64B5F6", "#64B5F6", "#82B1FF", "#90CAF9", "#80D8FF", "#BBDEFB", "#E3F2FD",
-            "#004D40", "#1B5E20", "#00695C", "#00796B", "#2E7D32", "#00897B", "#388E3C", "#009688",
-            "#43A047", "#28A745", "#34A853", "#26A69A", "#4CAF50", "#4DB6AC", "#66BB6A", "#00BFA5",
-            "#00C853", "#81C784", "#00D861", "#00E676", "#A5D6A7", "#1DE9B6", "#00F582", "#69F0AE",
-            "#1DF5C2", "#C8E6C9", "#64FFDA", "#B9F6CA", "#A7FFEB", "#C5FFD0", "#E8F5E8", "#D1FFD6",
-            "#B71C1C", "#C51162", "#C62828", "#D50000", "#D32F2F", "#DC3545", "#E53935", "#F50057",
-            "#FF1744", "#F44336", "#EF5350", "#FF4081", "#FF5252", "#E57373", "#FF80AB", "#FF867F",
-            "#FF8A80", "#EF9A9A", "#FF9292", "#FF9E9E", "#FFAAAA", "#FFABAD", "#FFB6B6", "#F8BBD0",
-            "#FFC2C2", "#FFCDD2", "#FFCECE", "#FFD8D8", "#FFDADA", "#FCE4EC", "#FFE6E6", "#FFEBEE",
-            "#E64A19", "#E65100", "#F4511E", "#FF5722", "#EF6C00", "#FF6D00", "#FF6F00", "#F57C00",
-            "#FB8C00", "#FF8F00", "#FF9100", "#FF9800", "#FFA000", "#FFA726", "#FFAB00", "#FFB300",
-            "#FFB74D", "#FFC400", "#FFCA28", "#FFCC80", "#FFD600", "#FFD740", "#FFE082", "#FFE0B2",
-            "#FFECB3", "#FFF2C9", "#FFF3E0", "#FFF8DF", "#FFF8E1", "#FFF9F0", "#FFFEF5", "#FFFFFB",
-            "#121B6E", "#2A1B8C", "#2C3487", "#343C8F", "#3A4495", "#7B1FA2", "#5A3CA9", "#6200EA",
-            "#6610F2", "#8E24AA", "#454DBD", "#651FFF", "#6D47B9", "#9C27B0", "#AB47BC", "#7C4DFF",
-            "#9575CD", "#BA68C8", "#B39DDB", "#CE93D8", "#C29EFF", "#CAAAFF", "#D2B6FF", "#E1BEE7",
-            "#D1C4E9", "#DAC2FF", "#E2CEFF", "#EADAFF", "#F3E5F5", "#EDE7F6", "#F2E6FF", "#F9F3FF",
-            "#004D40", "#005A5A", "#006064", "#007D8D", "#00838F", "#009191", "#0097A7", "#17A2B8",
-            "#26A69A", "#00ACC1", "#4DB6AC", "#00B8D4", "#00BFA5", "#00C0DC", "#26C6DA", "#80CBC4",
-            "#4DD0E1", "#1DE9B6", "#80DEEA", "#00E5FF", "#B2DFDB", "#B2EBF2", "#18FFFF", "#64FFDA",
-            "#84FFFF", "#A7FFEB", "#C8F7FC", "#E0F7FA", "#ECFDFF", "#F0FFFC", "#F4FFFE", "#F8FFFF",
-            "#2A1A0A", "#23272A", "#2C2F33", "#990000", "#075E54", "#6441A5", "#006600", "#3B5998",
-            "#BD081C", "#CC0000", "#7B39EC", "#4267B2", "#0E76A8", "#0077B5", "#9146FF", "#5865F2",
-            "#1877F2", "#128C7E", "#FF0000", "#FF3333", "#FF4500", "#7289DA", "#FF5700", "#FF6600",
-            "#1DA1F2", "#00ACEE", "#99AAB5", "#34B7F1", "#33CC33", "#25D366", "#00FF00", "#FFFF00"
+            # Row 1
+            "#1A237E", "#1F2884", "#242E8A", "#293490", "#2E3A96", "#33409C", "#3846A2", "#3D4CA8",
+            "#4252AE", "#4758B4", "#4C5EBA", "#5164C0", "#566AC6", "#5B70CC", "#6076D2", "#657CD8",
+            "#6A82DE", "#6F88E4", "#748EEA", "#7994F0", "#7E9AF6", "#83A0FC", "#88A6FF", "#8DACFF",
+            "#92B2FF", "#97B8FF", "#9CBEFF", "#A1C4FF", "#A6CAFF", "#ABD0FF", "#B0D6FF", "#DBEFFF",
+                    # Row 2
+            "#004D40", "#005446", "#005C4C", "#006452", "#006C58", "#00745E", "#007C64", "#00846A",
+            "#008C70", "#009476", "#009C7C", "#00A482", "#00AC88", "#00B48E", "#00BC94", "#00C49A",
+            "#00CCA0", "#00D4A6", "#00DCAC", "#00E4B2", "#00ECB8", "#00F4BE", "#00FCC4", "#1AFFCA",
+            "#34FFD0", "#4EFFD6", "#68FFDC", "#82FFE2", "#9CFFE8", "#B6FFEE", "#D0FFF4", "#EAFFEE",
+                    # Row 3
+            "#991818", "#A01D1D", "#A72222", "#AE2727", "#B52C2C", "#BC3131", "#C33636", "#CA3B3B",
+            "#D14040", "#D84545", "#DF4A4A", "#E64F4F", "#ED5454", "#F45959", "#FB5E5E", "#FF6363",
+            "#FF6E6E", "#FF7979", "#FF8484", "#FF8F8F", "#FF9A9A", "#FFA5A5", "#FFB0B0", "#FFBBBB",
+            "#FFC6C6", "#FFD1D1", "#FFDCDC", "#FFE7E7", "#FFEDED", "#FFF0F0", "#FFF3F3", "#FFF5F5",  
+            # Row 4
+            "#935114", "#9A581C", "#A15F24", "#A8662C", "#AF6D34", "#B6743C", "#BD7B44", "#C4824C",
+            "#CB8954", "#D2905C", "#D99764", "#E09E6C", "#E7A574", "#EEAC7C", "#F5B384", "#FCBA8C",
+            "#FFC194", "#FFC89C", "#FFCFA4", "#FFD6AC", "#FFDDB4", "#FFE4BC", "#FFEBC4", "#FFF0C7",
+            "#FFF2C9", "#FFF2CC", "#FFF4D1", "#FFF6D6", "#FFF8DB", "#FFFADF", "#FFFCE4", "#FFFEE9",
+            # Row 5
+            "#3E0A91", "#461398", "#4E1C9F", "#5625A6", "#5E2EAD", "#6637B4", "#6E40BB", "#7649C2",
+            "#7E52C9", "#865BD0", "#8E64D7", "#966DDE", "#9E76E5", "#A67FEC", "#AE88F3", "#B691FA",
+            "#BE9AFF", "#C6A3FF", "#CEACFF", "#D6B5FF", "#DEBEFF", "#E6C7FF", "#E2CEFF", "#EED0FF",
+            "#E9D6FF", "#F6D9FF", "#F0DEFF", "#FEE2FF", "#F8E6FF", "#FFEBFF", "#FFF4FF", "#FFFDFF",
+            # Row 6
+            "#005A5A", "#006161", "#006868", "#006F6F", "#007676", "#007D7D", "#008484", "#008B8B",
+            "#009292", "#009999", "#00A0A0", "#00A7A7", "#00AEAE", "#00B5B5", "#00BCBC", "#00C3C3",
+            "#00CACA", "#00D1D1", "#00D8D8", "#00DFDF", "#00E6E6", "#00EDED", "#00F4F4", "#00FBFB",
+            "#47FFFF", "#77FFFF", "#A7FFFF", "#C7FFFF", "#D7FFFF", "#DFFFFF", "#E7FFFF", "#E0F7FA",
+                    # Row 7
+            "#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#CCFF00", "#99FF00", "#66FF00",
+            "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF",
+            "#0099FF", "#0066FF", "#0033FF", "#0000FF", "#3300FF", "#6600FF", "#9900FF", "#CC00FF",
+            "#FF00FF", "#FF00CC", "#FF0099", "#FF0066", "#FF0033", "#FF3366", "#FF6699", "#FF99CC"
         ]
         # fmt: on
 
@@ -596,7 +604,6 @@ class WCAGCheckerApp:
     def update_app_background_from_hex_entry(self, _event):
         """Updates the app background color from the hex entry field."""
         new_hex_color = self.app_background_hex_var.get()
-        print(f"Updating app background with value {new_hex_color}")
         try:
             # Validate hex color
             self.hex_to_rgb(new_hex_color)

@@ -268,6 +268,20 @@ class WCAGCheckerApp:
         except Exception as e:
             messagebox.showerror("Save Error", f"Failed to save settings: {e}")
 
+    def random_colors(self):
+        """Sets all editable colors to random values."""
+
+        def get_random_hex_color():
+            return f"#{random.randint(0, 0xFFFFFF):06x}"
+
+        self.app_background_color = get_random_hex_color()
+        for state_key in self.state_color_settings:
+            self.state_color_settings[state_key]["background"] = get_random_hex_color()
+            self.state_color_settings[state_key]["foreground"] = get_random_hex_color()
+
+        self.refresh_all_displays()
+        self._update_compliance_indicators()
+
     def initialize_ui(self):
         """Sets up the main UI components by calling helper methods."""
         main_frame = self._create_main_frames()
@@ -971,19 +985,7 @@ class WCAGCheckerApp:
             )
         self.validate_compliance()
 
-    def random_colors(self):
-        """Sets all editable colors to random values."""
 
-        def get_random_hex_color():
-            return f"#{random.randint(0, 0xFFFFFF):06x}"
-
-        self.app_background_color = get_random_hex_color()
-        for state_key in self.state_color_settings:
-            self.state_color_settings[state_key]["background"] = get_random_hex_color()
-            self.state_color_settings[state_key]["foreground"] = get_random_hex_color()
-
-        self.refresh_all_displays()
-        self._update_compliance_indicators()
 
     def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
         """Converts an RGB color tuple to a hex string."""

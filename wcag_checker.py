@@ -15,6 +15,7 @@ import copy
 import json
 import os
 import random
+import colorsys
 import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from typing import Tuple, cast
@@ -297,7 +298,7 @@ class WCAGCheckerApp:
         min_contrast_button_vs_app_bg = (
             3.0  # WCAG AA for large text (buttons often have large text)
         )
-        MAX_COLOR_ADJUST_ATTEMPTS = 50
+        MAX_COLOR_ADJUST_ATTEMPTS = 100 # Increased attempts for base_button_background_rgb
 
         # Try to find a compliant darker background by iteratively darkening
         for _ in range(MAX_COLOR_ADJUST_ATTEMPTS):
@@ -329,101 +330,54 @@ class WCAGCheckerApp:
 
         # 3. Derive state-specific colors from base_button_background_rgb and
         # ensure compliance
-        for state_key in self.state_color_settings:
-            current_button_bg_rgb = (
-                base_button_background_rgb  # Default starting point for each state
-            )
+        base_h, base_s, base_l = self._rgb_to_hsl(base_button_background_rgb)
 
-            # Adjust colors based on state
-            if state_key == "focused":
-                focused_rgb_candidate = base_button_background_rgb
-                found_compliant_focused = False
-                for _ in range(MAX_COLOR_ADJUST_ATTEMPTS):
-                    # Attempt to lighten
-                    lightened_candidate_rgb = self._cast_color_list(list(min(255, c + 10) for c in focused_rgb_candidate)) # Lighten by 10
-                    if lightened_candidate_rgb == focused_rgb_candidate: # Can't lighten further
-                        break
-                    
-                    # Check compliance against app_bg_rgb
-                    if get_contrast_ratio(lightened_candidate_rgb, app_bg_rgb) >= min_contrast_button_vs_app_bg:
-                        # Also ensure it's still lighter than the base_button_background_rgb to fulfill "lighter" requirement
-                        if calculate_luminance(lightened_candidate_rgb) > calculate_luminance(base_button_background_rgb):
-                            focused_rgb_candidate = lightened_candidate_rgb
-                            found_compliant_focused = True
-                            break
-                    focused_rgb_candidate = lightened_candidate_rgb # Keep trying to lighten
-                
-                if found_compliant_focused:
-                    current_button_bg_rgb = focused_rgb_candidate
-                else:
-                    # Fallback if an iteratively lightened, compliant color wasn't found
-                    current_button_bg_rgb = self.hex_to_rgb("#5A96C8") # Default focused light blue
-
+        for state_key, description in self.button_state_definitions:
+            # HSL adjustments to create a candidate color
+            h, s, l = base_h, base_s, base_l
+            
+            # Default state just uses the base color (which is already determined to be compliant and darker than app_bg)
+            if state_key == "default":
+                pass 
+            elif state_key == "focused":
+                l = min(1.0, base_l + 0.15) # Make noticeably lighter
+                h = (base_h + 0.08) % 1.0 # Small hue shift, e.g., blue -> slightly greenish-blue
+                s = min(1.0, base_s * 1.1) # Slightly more saturated
             elif state_key == "disabled":
-                disabled_rgb_candidate = base_button_background_rgb # Start from base
-                neutral_gray_rgb = (128, 128, 128)
-                
-                # First, blend with neutral gray to get a "gray-ish" base
-                blended_rgb_initial = self._cast_color_list([
-                    int(base_button_background_rgb[i] * 0.7 + neutral_gray_rgb[i] * 0.3) # 70% base, 30% gray
-                    for i in range(3)
-                ])
-                
-                disabled_rgb_candidate = blended_rgb_initial
-                found_compliant_disabled = False
-
-                for _ in range(MAX_COLOR_ADJUST_ATTEMPTS):
-                    # Check compliance
-                    if get_contrast_ratio(disabled_rgb_candidate, app_bg_rgb) >= min_contrast_button_vs_app_bg:
-                        found_compliant_disabled = True
-                        break
-                    
-                    # If not compliant, try to adjust it
-                    # Prioritize lightening to reflect common disabled state appearance
-                    adjusted_candidate_rgb = self._cast_color_list(list(min(255, c + 5) for c in disabled_rgb_candidate))
-                    if adjusted_candidate_rgb == disabled_rgb_candidate: # If no component changed from lightening, try darkening
-                        adjusted_candidate_rgb = self._cast_color_list(list(max(0, c - 5) for c in disabled_rgb_candidate))
-                        if adjusted_candidate_rgb == disabled_rgb_candidate: # Can't adjust further
-                            break
-                    disabled_rgb_candidate = adjusted_candidate_rgb
-
-                if found_compliant_disabled:
-                    current_button_bg_rgb = disabled_rgb_candidate
-                else:
-                    # Fallback if an iteratively adjusted, compliant color wasn't found
-                    current_button_bg_rgb = self.hex_to_rgb("#BED2E6") # Default disabled light gray-blue
-
+                s = base_s * 0.4 # Significantly desaturate
+                l = min(1.0, base_l + 0.1) # Make lighter
+                # For "goes to gray but without leaving basic color", we can shift hue towards the middle of the spectrum
+                # or just keep it similar, but desaturated. Let's not shift hue too much here.
             elif state_key == "hover":
-                # Slightly darker than base_button_background_rgb
-                darkened_hover_rgb = self._cast_color_list(
-                    list(max(0, c - 10) for c in base_button_background_rgb)
-                )
-                if (
-                    get_contrast_ratio(darkened_hover_rgb, app_bg_rgb)
-                    >= min_contrast_button_vs_app_bg
-                ):
-                    current_button_bg_rgb = darkened_hover_rgb
-
+                l = max(0.0, base_l - 0.1) # Make darker
+                s = min(1.0, base_s * 1.2) # More saturated
             elif state_key == "active":
-                # Even darker than base_button_background_rgb
-                darkened_active_rgb = self._cast_color_list(
-                    list(max(0, c - 20) for c in base_button_background_rgb)
-                )
-                if (
-                    get_contrast_ratio(darkened_active_rgb, app_bg_rgb)
-                    >= min_contrast_button_vs_app_bg
-                ):
-                    current_button_bg_rgb = darkened_active_rgb
+                l = max(0.0, base_l - 0.2) # Make much darker
+                h = (base_h - 0.08) % 1.0 # Another hue shift, e.g., blue -> slightly purplish-blue
+                s = min(1.0, base_s * 1.3) # Even more saturated
 
-            # The 'default' state uses the base_button_background_rgb as is.
+            candidate_button_bg_rgb = self._hsl_to_rgb((h, s, l))
+
+            # Ensure compliance with app_bg_rgb using adjust_color_for_contrast
+            final_button_bg_rgb, _ = self.adjust_color_for_contrast(
+                candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+            )
+            
+            # Additional check for disabled: ensure its luminance is still below app_bg_rgb but above black.
+            if state_key == "disabled":
+                lum_final_button_bg = calculate_luminance(final_button_bg_rgb)
+                lum_app_bg = calculate_luminance(app_bg_rgb)
+                # If it ended up lighter than app_bg or too dark, use a robust disabled default
+                if lum_final_button_bg >= lum_app_bg or lum_final_button_bg < 0.15: # 0.15 to avoid near black
+                     final_button_bg_rgb = self.hex_to_rgb("#BED2E6") # Fallback for disabled if it fails to adjust correctly
 
             self.state_color_settings[state_key]["background"] = self.rgb_to_hex(
-                current_button_bg_rgb
+                final_button_bg_rgb
             )
 
             # Find compliant foreground color for the current state's background
             new_fg_rgb, _ = self.find_suitable_foreground_color(
-                current_button_bg_rgb, self.hex_to_rgb("#FFFFFF")
+                final_button_bg_rgb, self.hex_to_rgb("#FFFFFF")
             )
             self.state_color_settings[state_key]["foreground"] = self.rgb_to_hex(
                 new_fg_rgb
@@ -1159,6 +1113,18 @@ class WCAGCheckerApp:
     def _cast_color_list(color_list: list[int]) -> Tuple[int, int, int]:
         """Casts a list of 3 integers to a fixed-size tuple for type checking."""
         return cast(Tuple[int, int, int], tuple(color_list))
+
+    def _rgb_to_hsl(self, rgb: Tuple[int, int, int]) -> Tuple[float, float, float]:
+        """Converts an RGB color tuple to an HSL tuple (hue, saturation, lightness)."""
+        r, g, b = [c / 255.0 for c in rgb]
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        return h, s, l
+
+    def _hsl_to_rgb(self, hsl: Tuple[float, float, float]) -> Tuple[int, int, int]:
+        """Converts an HSL color tuple (hue, saturation, lightness) to an RGB tuple."""
+        h, s, l = hsl
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        return self._cast_color_list([int(c * 255) for c in (r, g, b)])
 
 
 def main() -> None:

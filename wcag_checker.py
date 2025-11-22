@@ -11,13 +11,15 @@ Author: Gino Bogo
 """
 
 import configparser as cfg
+import copy
 import json
 import os
 import random
 import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from typing import Tuple, cast
-from PIL import Image, ImageTk, ImageDraw
+
+from PIL import Image, ImageDraw, ImageTk
 
 CONFIG_FILE = "wcag_checker.cfg"
 
@@ -79,8 +81,6 @@ class WCAGCheckerApp:
         self.root.geometry("600x900")
         self.root.minsize(600, 800)
 
-        self.app_background_color = "#F0F0F0"
-
         self.button_state_definitions = [
             ("default", "Button Default"),
             ("hover", "Button Hover"),
@@ -90,31 +90,26 @@ class WCAGCheckerApp:
         ]
         self.state_descriptions = dict(self.button_state_definitions)
 
-        self.state_color_settings = {
-            "default": {
-                "background": "#4682B4",
-                "foreground": "#FFFFFF",
-            },
-            "hover": {
-                "background": "#326496",
-                "foreground": "#FFFFFF",
-            },
-            "focused": {
-                "background": "#5A96C8",
-                "foreground": "#FFFFFF",
-            },
-            "active": {
-                "background": "#1E466E",
-                "foreground": "#FFFFFF",
-            },
-            "disabled": {
-                "background": "#BED2E6",
-                "foreground": "#696969",
-            },
+        self.default_app_background_color = "#F0F0F0"
+        self.default_state_color_settings = {
+            "default": {"background": "#4682B4", "foreground": "#FFFFFF"},
+            "hover": {"background": "#326496", "foreground": "#FFFFFF"},
+            "focused": {"background": "#5A96C8", "foreground": "#FFFFFF"},
+            "active": {"background": "#1E466E", "foreground": "#FFFFFF"},
+            "disabled": {"background": "#BED2E6", "foreground": "#696969"},
         }
+
+        self.app_background_color = self.default_app_background_color
+        self.state_color_settings = copy.deepcopy(self.default_state_color_settings)
+
+        self.restore_app_background_color = self.default_app_background_color
+        self.restore_state_color_settings = copy.deepcopy(
+            self.default_state_color_settings
+        )
 
         self.state_ui_elements = {}
         self._resizing = False
+        self.file_loaded = False
 
         self.SWATCH_COLUMNS = 32
         self.SWATCH_WIDTH = 16
@@ -901,30 +896,9 @@ class WCAGCheckerApp:
             )
 
     def restore_defaults(self):
-        """Restores all color settings to their default values."""
-        self.app_background_color = "#F0F0F0"
-        self.state_color_settings = {
-            "default": {
-                "background": "#4682B4",
-                "foreground": "#FFFFFF",
-            },
-            "hover": {
-                "background": "#326496",
-                "foreground": "#FFFFFF",
-            },
-            "focused": {
-                "background": "#5A96C8",
-                "foreground": "#FFFFFF",
-            },
-            "active": {
-                "background": "#1E466E",
-                "foreground": "#FFFFFF",
-            },
-            "disabled": {
-                "background": "#BED2E6",
-                "foreground": "#696969",
-            },
-        }
+        """Restores color settings to the last loaded or default values."""
+        self.app_background_color = self.restore_app_background_color
+        self.state_color_settings = copy.deepcopy(self.restore_state_color_settings)
         self.refresh_all_displays()
 
         self.app_background_compliance_label.config(text="", foreground="black")
@@ -936,9 +910,14 @@ class WCAGCheckerApp:
                 text="", foreground="black"
             )
 
-        messagebox.showinfo(
-            "Reset Complete", "All colors have been restored to defaults."
-        )
+        if self.file_loaded:
+            messagebox.showinfo(
+                "Reset Complete", "Colors have been restored from the last loaded file."
+            )
+        else:
+            messagebox.showinfo(
+                "Reset Complete", "The default color set has been restored."
+            )
         self.validate_compliance()
 
     def random_colors(self):
@@ -1018,6 +997,13 @@ class WCAGCheckerApp:
 
             self.app_background_color = settings["app_background_color"]
             self.state_color_settings = settings["state_color_settings"]
+
+            self.restore_app_background_color = settings["app_background_color"]
+            self.restore_state_color_settings = copy.deepcopy(
+                settings["state_color_settings"]
+            )
+
+            self.file_loaded = True
             self.refresh_all_displays()
             self._update_compliance_indicators()
             messagebox.showinfo("Load Complete", "Settings loaded successfully.")

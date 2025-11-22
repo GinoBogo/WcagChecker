@@ -50,18 +50,6 @@ Contributions are welcome! If you would like to contribute, please follow these 
 3.  Make your changes and commit them with a clear message.
 4.  Submit a pull request.
 
-## Roadmap
-
-Future enhancements may include:
-
--   Support for WCAG 2.2 AAA compliance checking.
--   Ability to analyze local HTML files for accessibility issues.
--   Integration with browser extensions for live web page analysis.
-
-## Project Status
-
-This project is in active development. New features and improvements are ongoing.
-
 ## Acknowledgments
 
 This tool was developed with the help of the open-source community and relies on the following key libraries:

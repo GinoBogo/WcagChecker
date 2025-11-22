@@ -338,35 +338,53 @@ class WCAGCheckerApp:
             # HSL adjustments to create a candidate color
             hue_val, saturation_val, lightness_val = base_h, base_s, base_l
 
-            # Default state just uses the base color (which is already determined to be compliant and darker than app_bg)
-            if state_key == "default":
-                saturation_val = min(1.0, base_s * 1.05) # Slightly more saturated than base
-            elif state_key == "focused":
-                lightness_val = min(1.0, base_l + 0.15)  # Make noticeably lighter
-                hue_val = (
-                    base_h + 0.08
-                ) % 1.0  # Small hue shift, e.g., blue -> slightly greenish-blue
-                saturation_val = min(1.0, base_s * 1.1)  # Slightly more saturated
-            elif state_key == "disabled":
-                saturation_val = base_s * 0.4  # Significantly desaturate
-                lightness_val = min(1.0, base_l + 0.1)  # Make lighter
-                # For "goes to gray but without leaving basic color", we can shift hue towards the middle of the spectrum
-                # or just keep it similar, but desaturated. Let's not shift hue too much here.
-            elif state_key == "hover":
-                lightness_val = max(
-                    0.0, base_l - 0.05
-                )  # Slightly darker (less than 0.1)
-                hue_val = (
-                    base_h + 0.03
-                ) % 1.0  # Small hue shift, e.g., blue -> very slightly greenish-blue
-                saturation_val = min(1.0, base_s * 1.15)  # Slightly more saturated
+                        # Default state adjustments
 
-            elif state_key == "active":
-                lightness_val = max(0.0, base_l - 0.25)  # Even darker (more than 0.2)
-                hue_val = (
-                    base_h - 0.1
-                ) % 1.0  # More pronounced hue shift, e.g., blue -> purplish-blue
-                saturation_val = min(1.0, base_s * 1.4)  # Significantly more saturated
+                        if state_key == "default":
+
+                            saturation_val = min(1.0, base_s * 1.05) # Slightly more saturated than base
+
+                        # Hover state adjustments
+
+                        elif state_key == "hover":
+
+                            lightness_val = max(0.0, base_l - 0.05) # Slightly darker (less than 0.1)
+
+                            hue_val = (base_h + 0.03) % 1.0 # Small hue shift, e.g., blue -> very slightly greenish-blue
+
+                            saturation_val = min(1.0, base_s * 1.15) # Slightly more saturated
+
+                        # Focused state adjustments
+
+                        elif state_key == "focused":
+
+                            lightness_val = min(1.0, base_l + 0.15) # Make noticeably lighter
+
+                            hue_val = (base_h + 0.08) % 1.0 # Small hue shift, e.g., blue -> slightly greenish-blue
+
+                            saturation_val = min(1.0, base_s * 1.1) # Slightly more saturated
+
+                        # Active state adjustments
+
+                        elif state_key == "active":
+
+                            lightness_val = max(0.0, base_l - 0.25) # Even darker (more than 0.2)
+
+                            hue_val = (base_h - 0.1) % 1.0 # More pronounced hue shift, e.g., blue -> purplish-blue
+
+                            saturation_val = min(1.0, base_s * 1.4) # Significantly more saturated
+
+                        # Disabled state adjustments
+
+                        elif state_key == "disabled":
+
+                            saturation_val = base_s * 0.4 # Significantly desaturate
+
+                            lightness_val = min(1.0, base_l + 0.1) # Make lighter
+
+                            # For "goes to gray but without leaving basic color", we can shift hue towards the middle of the spectrum
+
+                            # or just keep it similar, but desaturated. Let's not shift hue too much here.
 
             candidate_button_bg_rgb = self._hsl_to_rgb(
                 (hue_val, saturation_val, lightness_val)

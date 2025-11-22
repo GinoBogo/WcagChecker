@@ -23,7 +23,6 @@ from PIL import Image, ImageDraw, ImageTk
 
 CONFIG_FILE = "wcag_checker.cfg"
 
-# Constants for UI layout
 FRAME_PADDING = 10  # Padding used in main_frame and controls_frame
 
 
@@ -37,11 +36,11 @@ def calculate_luminance(color: Tuple[int, int, int]) -> float:
 
 
 def calculate_contrast_ratio(
-    color1: Tuple[int, int, int], color2: Tuple[int, int, int]
+    foreground: Tuple[int, int, int], background: Tuple[int, int, int]
 ) -> float:
     """Calculates the contrast ratio between two RGB colors."""
-    l1 = calculate_luminance(color1)
-    l2 = calculate_luminance(color2)
+    l1 = calculate_luminance(foreground)
+    l2 = calculate_luminance(background)
     return (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
 
 
@@ -109,7 +108,7 @@ class WCAGCheckerApp:
 
         self.state_ui_elements = {}
         self._resizing = False
-        self.file_loaded = False
+        self._file_loaded = False
 
         self.SWATCH_COLUMNS = 32
         self.SWATCH_WIDTH = 16
@@ -170,8 +169,14 @@ class WCAGCheckerApp:
         self.save_window_geometry()
         self.root.destroy()
 
-    # endregion
-    # region ----------------- Configuration and State Management -----------------
+    def load_window_geometry(self):
+        """Loads the window geometry from a config file if it exists."""
+        config = cfg.ConfigParser()
+        if os.path.exists(CONFIG_FILE):
+            config.read(CONFIG_FILE)
+            if "WINDOW" in config and "geometry" in config["WINDOW"]:
+                self.root.geometry(config["WINDOW"]["geometry"])
+
     def save_window_geometry(self):
         """Saves the current window geometry to a config file."""
         config = cfg.ConfigParser()
@@ -180,14 +185,6 @@ class WCAGCheckerApp:
         }
         with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)
-
-    def load_window_geometry(self):
-        """Loads the window geometry from a config file if it exists."""
-        config = cfg.ConfigParser()
-        if os.path.exists(CONFIG_FILE):
-            config.read(CONFIG_FILE)
-            if "WINDOW" in config and "geometry" in config["WINDOW"]:
-                self.root.geometry(config["WINDOW"]["geometry"])
 
     def load_settings(self):
         """Loads color settings from a file."""
@@ -235,7 +232,7 @@ class WCAGCheckerApp:
                 settings["state_color_settings"]
             )
 
-            self.file_loaded = True
+            self._file_loaded = True
             self.refresh_all_displays()
             self._update_compliance_indicators()
             messagebox.showinfo("Load Complete", "Settings loaded successfully.")
@@ -271,8 +268,6 @@ class WCAGCheckerApp:
         except Exception as e:
             messagebox.showerror("Save Error", f"Failed to save settings: {e}")
 
-    # endregion
-    # region ------------------------- UI Initialization --------------------------
     def initialize_ui(self):
         """Sets up the main UI components by calling helper methods."""
         main_frame = self._create_main_frames()
@@ -555,9 +550,7 @@ class WCAGCheckerApp:
 
         return image
 
-    # endregion
-    # region ---------------------- UI Event Handlers and Actions -----------------------
-    def _resize_palette_image(self, event=None):
+    def _resize_palette_image(self, _event=None):
         """Resizes the palette image to fit the label width while maintaining aspect ratio."""
         if self._resizing:
             return
@@ -712,8 +705,6 @@ class WCAGCheckerApp:
             self.state_color_settings[state_key][color_type] = color[1]
             self.refresh_all_displays()
 
-    # endregion
-    # region ------------------------ Core Application Logic ------------------------
     def check_contrast_compliance(
         self,
         foreground_color: Tuple[int, int, int],
@@ -791,7 +782,7 @@ class WCAGCheckerApp:
             current_foreground_color, background_color, minimum_ratio
         )
 
-    def fix_colors_for_state(self, state_key: str) -> int:
+    def _fix_colors_for_state(self, state_key: str) -> int:
         """Corrects the colors for a given state to meet compliance."""
         fixes_applied = 0
         background_color = self.state_color_settings[state_key]["background"]
@@ -840,8 +831,6 @@ class WCAGCheckerApp:
                 fixes_applied += 1
         return fixes_applied
 
-    # endregion
-    # region ---------------------- UI Update and Refresh Methods -----------------------
     def refresh_all_displays(self):
         """Refreshes all UI elements with the current color settings."""
         self.app_background_hex_var.set(self.app_background_color)
@@ -925,8 +914,6 @@ class WCAGCheckerApp:
                 all_compliant = False
         return all_compliant
 
-    # endregion
-    # region ------------------------ Control Button Commands -------------------------
     def validate_compliance(self):
         """Checks all color combinations and displays a compliance summary."""
         if self._update_compliance_indicators():
@@ -944,7 +931,7 @@ class WCAGCheckerApp:
         total_fixes_applied = 0
 
         for state_key, _ in self.button_state_definitions:
-            total_fixes_applied += self.fix_colors_for_state(state_key)
+            total_fixes_applied += self._fix_colors_for_state(state_key)
 
         self.refresh_all_displays()
 
@@ -974,7 +961,7 @@ class WCAGCheckerApp:
                 text="", foreground="black"
             )
 
-        if self.file_loaded:
+        if self._file_loaded:
             messagebox.showinfo(
                 "Reset Complete", "Colors have been restored from the last loaded file."
             )
@@ -998,8 +985,6 @@ class WCAGCheckerApp:
         self.refresh_all_displays()
         self._update_compliance_indicators()
 
-    # endregion
-    # region ----------------------------- Utilities ------------------------------
     def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
         """Converts an RGB color tuple to a hex string."""
         return "#{:02X}{:02X}{:02X}".format(*color)

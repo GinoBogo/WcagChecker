@@ -11,9 +11,10 @@ Author: Gino Bogo
 """
 
 import configparser as cfg
+import json
 import os
 import tkinter as tk
-from tkinter import colorchooser, messagebox, ttk
+from tkinter import colorchooser, filedialog, messagebox, ttk
 from typing import Tuple, cast
 from PIL import Image, ImageTk, ImageDraw
 
@@ -165,6 +166,7 @@ class WCAGCheckerApp:
         self.load_window_geometry()
         self.initialize_ui()
         self.refresh_all_displays()
+        self._update_compliance_indicators()
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def on_closing(self):
@@ -510,16 +512,23 @@ class WCAGCheckerApp:
         }
 
     def _create_control_buttons(self, parent):
-        """Creates the Validate, Restore, and Correct action buttons."""
+        """Creates the Open, Save, Restore, and Correct action buttons."""
         buttons_inner_frame = ttk.Frame(parent)
         buttons_inner_frame.pack(expand=True, anchor="center")
 
         ttk.Button(
             buttons_inner_frame,
-            text="Validate",
+            text="Open",
             cursor="hand2",
             width=15,
-            command=self.validate_compliance,
+            command=self.load_settings,
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            buttons_inner_frame,
+            text="Save",
+            cursor="hand2",
+            width=15,
+            command=self.save_settings,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
@@ -609,6 +618,7 @@ class WCAGCheckerApp:
             self.hex_to_rgb(new_hex_color)
             self.app_background_color = new_hex_color
             self.refresh_all_displays()
+            self._update_compliance_indicators()
         except ValueError:
             # Restore original color if invalid
             self.app_background_hex_var.set(self.app_background_color)
@@ -626,6 +636,7 @@ class WCAGCheckerApp:
             self.hex_to_rgb(new_hex_color)
             self.state_color_settings[state_key][color_type] = new_hex_color
             self.refresh_all_displays()
+            self._update_compliance_indicators()
         except ValueError:
             # Restore original color if invalid
             original_color = self.state_color_settings[state_key][color_type]
@@ -805,23 +816,13 @@ class WCAGCheckerApp:
             current_foreground_color, background_color, minimum_ratio
         )
 
-    def validate_compliance(self):
-        """Checks all color combinations and displays a compliance summary."""
-        self.app_background_compliance_label.config(text="", foreground="black")
-        for state_key, _ in self.button_state_definitions:
-            self.state_ui_elements[state_key]["background_compliance_label"].config(
-                text="", foreground="black"
-            )
-            self.state_ui_elements[state_key]["foreground_compliance_label"].config(
-                text="", foreground="black"
-            )
-
-        all_combinations_compliant = True
-
+    def _update_compliance_indicators(self) -> bool:
+        """Checks all color combinations and updates the compliance indicators."""
+        all_compliant = True
+        # Check foreground-background contrast for each button state
         for state_key, description in self.button_state_definitions:
             background_color = self.state_color_settings[state_key]["background"]
             foreground_color = self.state_color_settings[state_key]["foreground"]
-
             is_compliant, ratio = self.check_contrast_compliance(
                 self.hex_to_rgb(foreground_color),
                 self.hex_to_rgb(background_color),
@@ -833,11 +834,11 @@ class WCAGCheckerApp:
                 ratio,
             )
             if not is_compliant:
-                all_combinations_compliant = False
+                all_compliant = False
 
+        # Check button background against application background contrast
         for state_key, description in self.button_state_definitions:
             button_background = self.state_color_settings[state_key]["background"]
-
             is_compliant, ratio = self.check_contrast_compliance(
                 self.hex_to_rgb(self.app_background_color),
                 self.hex_to_rgb(button_background),
@@ -849,9 +850,12 @@ class WCAGCheckerApp:
                 ratio,
             )
             if not is_compliant:
-                all_combinations_compliant = False
+                all_compliant = False
+        return all_compliant
 
-        if all_combinations_compliant:
+    def validate_compliance(self):
+        """Checks all color combinations and displays a compliance summary."""
+        if self._update_compliance_indicators():
             messagebox.showinfo(
                 "Compliance Check", "All color combinations are WCAG 2.2 AA compliant!"
             )
@@ -921,6 +925,81 @@ class WCAGCheckerApp:
             "Reset Complete", "All colors have been restored to defaults."
         )
         self.validate_compliance()
+
+    def save_settings(self):
+        """Saves the current color settings to a file."""
+        settings = {
+            "app_background_color": self.app_background_color,
+            "state_color_settings": self.state_color_settings,
+        }
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Save Color Settings",
+        )
+
+        if not filepath:
+            return
+
+        try:
+            with open(filepath, "w") as f:
+                json.dump(settings, f, indent=4)
+            messagebox.showinfo("Save Complete", f"Settings saved to {filepath}")
+        except Exception as e:
+            messagebox.showerror("Save Error", f"Failed to save settings: {e}")
+
+    def load_settings(self):
+        """Loads color settings from a file."""
+        filepath = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Load Color Settings",
+        )
+
+        if not filepath:
+            return
+
+        try:
+            with open(filepath, "r") as f:
+                settings = json.load(f)
+
+            # Robust validation
+            if not isinstance(settings, dict):
+                raise ValueError("Settings file is not a valid JSON object.")
+
+            if (
+                "app_background_color" not in settings
+                or "state_color_settings" not in settings
+            ):
+                raise ValueError("Missing required keys in settings file.")
+
+            if not isinstance(settings["state_color_settings"], dict):
+                raise ValueError("'state_color_settings' should be a dictionary.")
+
+            for state_key, _ in self.button_state_definitions:
+                if state_key not in settings["state_color_settings"]:
+                    raise ValueError(f"Missing settings for state: {state_key}")
+                if (
+                    "background" not in settings["state_color_settings"][state_key]
+                    or "foreground" not in settings["state_color_settings"][state_key]
+                ):
+                    raise ValueError(
+                        f"Missing 'background' or 'foreground' for state: {state_key}"
+                    )
+
+            self.app_background_color = settings["app_background_color"]
+            self.state_color_settings = settings["state_color_settings"]
+            self.refresh_all_displays()
+            self._update_compliance_indicators()
+            messagebox.showinfo("Load Complete", "Settings loaded successfully.")
+
+        except (ValueError, json.JSONDecodeError) as e:
+            messagebox.showerror(
+                "Invalid File",
+                f"The selected file is not a valid settings file.\n\n{e}",
+            )
+        except Exception as e:
+            messagebox.showerror("Load Error", f"Failed to load settings: {e}")
 
 
 def main() -> None:

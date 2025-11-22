@@ -283,36 +283,75 @@ class WCAGCheckerApp:
 
         app_bg_rgb = self.hex_to_rgb(self.app_background_color)
 
+        # 2. Generate a single "base button background color" compliant with app_background_color
+        base_button_background_rgb = app_bg_rgb # Start with app background color
+        min_contrast_button_vs_app_bg = 3.0 # WCAG AA for large text (buttons often have large text)
+        MAX_COLOR_ADJUST_ATTEMPTS = 50
+
+        # Try to find a compliant darker background by iteratively darkening
+        for _ in range(MAX_COLOR_ADJUST_ATTEMPTS):
+            current_contrast = get_contrast_ratio(base_button_background_rgb, app_bg_rgb)
+            lum_app_bg = calculate_luminance(app_bg_rgb)
+            lum_button_bg = calculate_luminance(base_button_background_rgb)
+
+            # Check if compliant and actually darker than app background
+            if (current_contrast >= min_contrast_button_vs_app_bg) and (lum_button_bg < lum_app_bg):
+                break
+            
+            darkened_rgb = self._cast_color_list(list(max(0, c - 10) for c in base_button_background_rgb))
+            if darkened_rgb == base_button_background_rgb: # If no component changed, can't darken further
+                break
+            base_button_background_rgb = darkened_rgb
+        else:
+            # Fallback if a compliant darker color couldn't be found
+            base_button_background_rgb = self.hex_to_rgb("#4682B4") # Steel Blue as a robust default compliant darker color
+
+        # 3. Derive state-specific colors from base_button_background_rgb and ensure compliance
         for state_key in self.state_color_settings:
-            # 2. Determine a compliant darker button background based on app_background_color
-            button_bg_rgb = app_bg_rgb # Start with app background color
-            min_contrast_button_vs_app_bg = 3.0 # WCAG AA for large text (buttons often have large text)
-            MAX_DARK_ATTEMPTS = 50
+            current_button_bg_rgb = base_button_background_rgb # Default starting point for each state
 
-            # Try to find a compliant darker background by iteratively darkening
-            for _ in range(MAX_DARK_ATTEMPTS):
-                current_contrast = get_contrast_ratio(button_bg_rgb, app_bg_rgb)
-                lum_app_bg = calculate_luminance(app_bg_rgb)
-                lum_button_bg = calculate_luminance(button_bg_rgb)
+            # Adjust colors based on state
+            if state_key == "focused":
+                # Lighter color for focused state, derived from base_button_background_rgb
+                lightened_focused_rgb = self._cast_color_list(list(min(255, c + 20) for c in base_button_background_rgb))
+                # Ensure compliance with app_bg_rgb and set
+                if get_contrast_ratio(lightened_focused_rgb, app_bg_rgb) >= min_contrast_button_vs_app_bg:
+                    current_button_bg_rgb = lightened_focused_rgb
+                else:
+                    current_button_bg_rgb = self.hex_to_rgb("#5A96C8") # Fallback to a known light focused color
 
-                # Check if compliant and actually darker than app background
-                if (current_contrast >= min_contrast_button_vs_app_bg) and (lum_button_bg < lum_app_bg):
-                    break
+            elif state_key == "disabled":
+                # Grayed out color for disabled state, derived from base_button_background_rgb
+                # Blend with a light grey (e.g., 50% base, 50% light grey)
+                light_gray_rgb = (200, 200, 200)
+                blended_disabled_rgb = self._cast_color_list([
+                    int(base_button_background_rgb[i] * 0.5 + light_gray_rgb[i] * 0.5)
+                    for i in range(3)
+                ])
+                # Ensure compliance with app_bg_rgb and set
+                if get_contrast_ratio(blended_disabled_rgb, app_bg_rgb) >= min_contrast_button_vs_app_bg:
+                    current_button_bg_rgb = blended_disabled_rgb
+                else:
+                    current_button_bg_rgb = self.hex_to_rgb("#BED2E6") # Fallback to a known disabled color
+
+            elif state_key == "hover":
+                # Slightly darker than base_button_background_rgb
+                darkened_hover_rgb = self._cast_color_list(list(max(0, c - 10) for c in base_button_background_rgb))
+                if get_contrast_ratio(darkened_hover_rgb, app_bg_rgb) >= min_contrast_button_vs_app_bg:
+                    current_button_bg_rgb = darkened_hover_rgb
                 
-                # Darken the color components by 10
-                darkened_rgb = tuple(max(0, c - 10) for c in button_bg_rgb)
-                if darkened_rgb == button_bg_rgb: # If no component changed, can't darken further
-                    break
-                button_bg_rgb = darkened_rgb
-            else:
-                # Fallback if a compliant darker color couldn't be found
-                button_bg_rgb = self.hex_to_rgb("#4682B4") # Steel Blue as a robust default compliant darker color
+            elif state_key == "active":
+                # Even darker than base_button_background_rgb
+                darkened_active_rgb = self._cast_color_list(list(max(0, c - 20) for c in base_button_background_rgb))
+                if get_contrast_ratio(darkened_active_rgb, app_bg_rgb) >= min_contrast_button_vs_app_bg:
+                    current_button_bg_rgb = darkened_active_rgb
+            
+            # The 'default' state uses the base_button_background_rgb as is.
 
-            self.state_color_settings[state_key]["background"] = self.rgb_to_hex(button_bg_rgb)
+            self.state_color_settings[state_key]["background"] = self.rgb_to_hex(current_button_bg_rgb)
 
-            # 3. Find a compliant foreground color for the button (text on button)
-            # Starting with white as preferred, then black, then adjust
-            new_fg_rgb, _ = self.find_suitable_foreground_color(button_bg_rgb, self.hex_to_rgb("#FFFFFF"))
+            # Find compliant foreground color for the current state's background
+            new_fg_rgb, _ = self.find_suitable_foreground_color(current_button_bg_rgb, self.hex_to_rgb("#FFFFFF"))
             self.state_color_settings[state_key]["foreground"] = self.rgb_to_hex(new_fg_rgb)
 
         self.refresh_all_displays()

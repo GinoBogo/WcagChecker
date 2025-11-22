@@ -12,7 +12,7 @@ correct non-compliant colors to meet accessibility requirements.
 -   **WCAG 2.2 AA Compliance:** Verify compliance against WCAG 2.2 Level AA guidelines for normal and large text.
 -   **Automatic Correction:** Automatically adjust non-compliant colors to meet minimum contrast requirements.
 -   **Interactive UI:** Select colors using a color picker or by entering hex values, and see live previews.
--   **Web Safe Color Palette:** Provides a palette of web-safe colors for easy selection.
+-   **Balanced Color Palette:** Provides a curated palette of colors designed to offer a balanced and comprehensive range of hues and shades.
 -   **Customizable Button States:** Check and adjust colors for different button states (default, hover, focused, active, disabled).
 
 ![GUI Screenshot](docs/images/figure_01.png)

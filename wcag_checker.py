@@ -1061,65 +1061,87 @@ class WCAGCheckerApp:
         self.validate_compliance()
 
     def random_colors(self):
-        """Sets all editable colors to random values, ensuring WCAG compliance."""
+        """Sets all editable colors to random values with more distinct state
+        variations."""
 
         app_bg_rgb = self.hex_to_rgb(self.app_background_color)
+        min_contrast_button_vs_app_bg = 3.0
 
-        min_contrast_button_vs_app_bg = 3.0  # WCAG AA for large text
-
-        # Pick a random base color for buttons and ensure contrast with app background.
+        # Pick a random base color
         random_base_color_hex = random.choice(self.balanced_colors)
         random_base_color_rgb = self.hex_to_rgb(random_base_color_hex)
 
+        # Ensure base contrasts with app background
         base_button_background_rgb, _ = self.adjust_color_for_contrast(
             random_base_color_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
         )
 
-        # Derive state-specific colors from base_button_background_rgb.
         base_h, base_s, base_l = self._rgb_to_hsl(base_button_background_rgb)
 
-        for state_key, _ in self.button_state_definitions:
-            hue_val, saturation_val, lightness_val = base_h, base_s, base_l
+        # More distinct transformations for each state
+        state_transformations = {
+            "default": {
+                "hue_shift": 0.0,
+                "saturation_mult": 1.0,
+                "lightness_shift": 0.0,
+            },
+            "hover": {
+                "hue_shift": 0.02,  # Small hue shift
+                "saturation_mult": 1.2,  # +20% saturation
+                "lightness_shift": -0.15,  # -15% lightness (darker)
+            },
+            "focused": {
+                "hue_shift": 0.08,  # Noticeable hue shift
+                "saturation_mult": 1.1,  # +10% saturation
+                "lightness_shift": 0.25,  # +25% lightness (lighter)
+            },
+            "active": {
+                "hue_shift": -0.12,  # Opposite hue direction
+                "saturation_mult": 1.4,  # +40% saturation (more vibrant)
+                "lightness_shift": -0.35,  # -35% lightness (much darker)
+            },
+            "disabled": {
+                "hue_shift": 0.0,
+                "saturation_mult": 0.3,  # 70% de-saturation
+                "lightness_shift": 0.4,  # +40% lightness (much lighter)
+            },
+        }
 
-            if state_key == "default":
-                saturation_val = min(1.0, base_s * 1.05)
-            elif state_key == "hover":
-                lightness_val = max(0.0, base_l - 0.05)
-                hue_val = (base_h + 0.03) % 1.0
-                saturation_val = min(1.0, base_s * 1.15)
-            elif state_key == "focused":
-                lightness_val = min(1.0, base_l + 0.15)
-                hue_val = (base_h + 0.08) % 1.0
-                saturation_val = min(1.0, base_s * 1.1)
-            elif state_key == "active":
-                lightness_val = max(0.0, base_l - 0.25)
-                hue_val = (base_h - 0.1) % 1.0
-                saturation_val = min(1.0, base_s * 1.4)
-            elif state_key == "disabled":
-                saturation_val = base_s * 0.4
-                lightness_val = min(1.0, base_l + 0.1)
+        for state_key, transforms in state_transformations.items():
+            hue_val = (base_h + transforms["hue_shift"]) % 1.0
+            saturation_val = min(1.0, base_s * transforms["saturation_mult"])
+            lightness_val = max(0.0, min(1.0, base_l + transforms["lightness_shift"]))
 
             candidate_button_bg_rgb = self._hsl_to_rgb(
                 (hue_val, saturation_val, lightness_val)
             )
 
-            # Ensure compliance with app_bg_rgb.
+            # Ensure compliance with app background
             final_button_bg_rgb, _ = self.adjust_color_for_contrast(
                 candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
             )
 
-            # Handle disabled state luminance.
+            # For disabled state, ensure it's sufficiently gray and distinct
             if state_key == "disabled":
-                lum_final_button_bg = calculate_luminance(final_button_bg_rgb)
-                lum_app_bg = calculate_luminance(app_bg_rgb)
-                if lum_final_button_bg >= lum_app_bg or lum_final_button_bg < 0.15:
-                    final_button_bg_rgb = self.hex_to_rgb("#BED2E6")
+                disabled_h, disabled_s, disabled_l = self._rgb_to_hsl(
+                    final_button_bg_rgb
+                )
+                # Force more de-saturation and appropriate lightness
+                if disabled_s > 0.2:
+                    final_button_bg_rgb = self._hsl_to_rgb(
+                        (base_h, 0.2, max(0.6, disabled_l))
+                    )
+
+                # Final compliance check
+                final_button_bg_rgb, _ = self.adjust_color_for_contrast(
+                    final_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+                )
 
             self.state_color_settings[state_key]["background"] = self.rgb_to_hex(
                 final_button_bg_rgb
             )
 
-            # Find compliant foreground color.
+            # Find compliant foreground color
             new_fg_rgb, _ = self.find_suitable_foreground_color(
                 final_button_bg_rgb, self.hex_to_rgb("#FFFFFF")
             )

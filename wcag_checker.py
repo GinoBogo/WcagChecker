@@ -787,43 +787,56 @@ class WCAGCheckerApp:
         target_color: Tuple[int, int, int],
         reference_color: Tuple[int, int, int],
         minimum_ratio: float = 4.5,
-        max_iterations: int = 20,
+        max_iterations: int = 100, # Increased iterations for robustness
     ) -> Tuple[Tuple[int, int, int], float]:
-        """Adjusts a color to meet a minimum contrast ratio against another color."""
-
-        adjusted_color = list(target_color)
+        """Adjusts a color to meet a minimum contrast ratio against another color using HSL lightness adjustment.
+        Prioritizes moving lightness away from the reference color's lightness."""
+        
+        adjusted_hsl = list(self._rgb_to_hsl(target_color))
         reference_luminance = calculate_luminance(reference_color)
-        target_luminance = calculate_luminance(self._cast_color_list(adjusted_color))
+        
+        best_color = target_color
+        best_contrast = calculate_contrast_ratio(target_color, reference_color)
 
-        needs_darker = target_luminance > reference_luminance
-        adjustment = -10 if needs_darker else 10
+        if best_contrast >= minimum_ratio:
+            return best_color, best_contrast
+
+        # Initial direction: move lightness of target color away from reference color's lightness
+        target_luminance = calculate_luminance(self._hsl_to_rgb(tuple(adjusted_hsl)))
+        lightness_adjustment_step = 0.02 # Smaller step for finer control
+
+        if target_luminance > reference_luminance: # Target is lighter, make it darker
+            lightness_adjustment_step = -lightness_adjustment_step
+        else: # Target is darker, make it lighter
+            lightness_adjustment_step = lightness_adjustment_step
 
         for iteration in range(max_iterations):
-            current_contrast = calculate_contrast_ratio(
-                self._cast_color_list(adjusted_color), reference_color
-            )
+            previous_contrast = calculate_contrast_ratio(self._hsl_to_rgb(tuple(adjusted_hsl)), reference_color)
+            
+            new_lightness = adjusted_hsl[2] + lightness_adjustment_step
+            new_lightness = max(0.0, min(1.0, new_lightness)) # Clamp
+            
+            adjusted_hsl[2] = new_lightness
+            candidate_rgb = self._hsl_to_rgb(tuple(adjusted_hsl))
+            current_contrast = calculate_contrast_ratio(candidate_rgb, reference_color)
+            
+            if current_contrast > best_contrast:
+                best_contrast = current_contrast
+                best_color = candidate_rgb
 
             if current_contrast >= minimum_ratio:
-                return (
-                    self._cast_color_list(adjusted_color),
-                    current_contrast,
-                )
-
-            for i in range(3):
-                new_value = adjusted_color[i] + adjustment
-                adjusted_color[i] = max(0, min(255, new_value))
-
-            if all(c == 0 for c in adjusted_color) or all(
-                c == 255 for c in adjusted_color
-            ):
-                break
-
-        return (
-            self._cast_color_list(adjusted_color),
-            calculate_contrast_ratio(
-                self._cast_color_list(adjusted_color), reference_color
-            ),
-        )
+                return best_color, best_contrast
+            
+            # If we hit a lightness boundary or contrast starts to decrease, reverse direction
+            if (new_lightness == 0.0 and lightness_adjustment_step < 0) or \
+               (new_lightness == 1.0 and lightness_adjustment_step > 0) or \
+               (current_contrast < previous_contrast and iteration > 0):
+                lightness_adjustment_step = -lightness_adjustment_step # Reverse direction
+                # If we reversed and are still not compliant, and step is very small, we might be stuck
+                if abs(lightness_adjustment_step) < 0.001:
+                    break
+        
+        return best_color, best_contrast
 
     def find_suitable_foreground_color(
         self,
@@ -1116,7 +1129,7 @@ class WCAGCheckerApp:
             )
 
         # Generate random foreground colors with high contrast
-        for state_key, _ in self.button_state_definitions:
+        for state_key in state_transformations.keys():
             state_bg_rgb = self.hex_to_rgb(
                 self.state_color_settings[state_key]["background"]
             )

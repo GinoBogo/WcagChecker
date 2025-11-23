@@ -23,8 +23,12 @@ from typing import Tuple, cast
 from PIL import Image, ImageDraw, ImageTk
 
 CONFIG_FILE = "wcag_checker.cfg"
-
 FRAME_PADDING = 10  # Padding used in main_frame and controls_frame
+
+
+# =============================================================================
+# CORE WCAG COMPLIANCE FUNCTIONS
+# =============================================================================
 
 
 def calculate_luminance(color: Tuple[int, int, int]) -> float:
@@ -73,7 +77,16 @@ def is_compliant(
             return contrast_ratio >= 4.5
 
 
+# =============================================================================
+# MAIN APPLICATION CLASS
+# =============================================================================
+
+
 class WCAGCheckerApp:
+    # =========================================================================
+    # INITIALIZATION AND CONFIGURATION
+    # =========================================================================
+
     def __init__(self, root: tk.Tk):
         """Initializes the WCAG Checker GUI application."""
         self.root = root
@@ -81,6 +94,18 @@ class WCAGCheckerApp:
         self.root.geometry("600x900")
         self.root.minsize(600, 800)
 
+        # Application state and configuration
+        self._initialize_application_state()
+        self._initialize_color_palette()
+
+        self.load_window_geometry()
+        self.initialize_ui()
+        self.refresh_all_displays()
+        self._update_compliance_indicators()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def _initialize_application_state(self):
+        """Initializes the application state variables and default settings."""
         self.button_state_definitions = [
             ("default", "Button Default"),
             ("hover", "Button Hover"),
@@ -114,44 +139,46 @@ class WCAGCheckerApp:
         self.SWATCH_COLUMNS = 32
         self.SWATCH_WIDTH = 16
 
+    def _initialize_color_palette(self):
+        """Initializes the color palette with balanced colors."""
         # fmt: off
         self.balanced_colors = [
-            # Row 0
+            # Row 0 - Grayscale
             "#000000", "#080808", "#101010", "#181818", "#202020", "#282828", "#303030", "#383838",
             "#404040", "#484848", "#505050", "#585858", "#606060", "#686868", "#707070", "#787878",
             "#808080", "#888888", "#909090", "#989898", "#A0A0A0", "#A8A8A8", "#B0B0B0", "#B8B8B8",
             "#C0C0C0", "#C8C8C8", "#D0D0D0", "#D8D8D8", "#E0E0E0", "#E8E8E8", "#F0F0F0", "#FFFFFF",
-            # Row 1
+            # Row 1 - Blues
             "#1A237E", "#1F2884", "#242E8A", "#293490", "#2E3A96", "#33409C", "#3846A2", "#3D4CA8",
             "#4252AE", "#4758B4", "#4C5EBA", "#5164C0", "#566AC6", "#5B70CC", "#6076D2", "#657CD8",
             "#6A82DE", "#6F88E4", "#748EEA", "#7994F0", "#7E9AF6", "#83A0FC", "#88A6FF", "#8DACFF",
             "#92B2FF", "#97B8FF", "#9CBEFF", "#A1C4FF", "#A6CAFF", "#ABD0FF", "#B0D6FF", "#DBEFFF",
-            # Row 2
+            # Row 2 - Greens
             "#004D40", "#005446", "#005C4C", "#006452", "#006C58", "#00745E", "#007C64", "#00846A",
             "#008C70", "#009476", "#009C7C", "#00A482", "#00AC88", "#00B48E", "#00BC94", "#00C49A",
             "#00CCA0", "#00D4A6", "#00DCAC", "#00E4B2", "#00ECB8", "#00F4BE", "#00FCC4", "#1AFFCA",
             "#34FFD0", "#4EFFD6", "#68FFDC", "#82FFE2", "#9CFFE8", "#B6FFEE", "#D0FFF4", "#EAFFEE",
-            # Row 3
+            # Row 3 - Reds
             "#991818", "#A01D1D", "#A72222", "#AE2727", "#B52C2C", "#BC3131", "#C33636", "#CA3B3B",
             "#D14040", "#D84545", "#DF4A4A", "#E64F4F", "#ED5454", "#F45959", "#FB5E5E", "#FF6363",
             "#FF6E6E", "#FF7979", "#FF8484", "#FF8F8F", "#FF9A9A", "#FFA5A5", "#FFB0B0", "#FFBBBB",
             "#FFC6C6", "#FFD1D1", "#FFDCDC", "#FFE7E7", "#FFEDED", "#FFF0F0", "#FFF3F3", "#FFF5F5",  
-            # Row 4
+            # Row 4 - Oranges/Browns
             "#935114", "#9A581C", "#A15F24", "#A8662C", "#AF6D34", "#B6743C", "#BD7B44", "#C4824C",
             "#CB8954", "#D2905C", "#D99764", "#E09E6C", "#E7A574", "#EEAC7C", "#F5B384", "#FCBA8C",
             "#FFC194", "#FFC89C", "#FFCFA4", "#FFD6AC", "#FFDDB4", "#FFE4BC", "#FFEBC4", "#FFF0C7",
             "#FFF2C9", "#FFF2CC", "#FFF4D1", "#FFF6D6", "#FFF8DB", "#FFFADF", "#FFFCE4", "#FFFEE9",
-            # Row 5
+            # Row 5 - Purples
             "#3E0A91", "#461398", "#4E1C9F", "#5625A6", "#5E2EAD", "#6637B4", "#6E40BB", "#7649C2",
             "#7E52C9", "#865BD0", "#8E64D7", "#966DDE", "#9E76E5", "#A67FEC", "#AE88F3", "#B691FA",
             "#BE9AFF", "#C6A3FF", "#CEACFF", "#D6B5FF", "#DEBEFF", "#E6C7FF", "#E2CEFF", "#EED0FF",
             "#E9D6FF", "#F6D9FF", "#F0DEFF", "#FEE2FF", "#F8E6FF", "#FFEBFF", "#FFF4FF", "#FFFDFF",
-            # Row 6
+            # Row 6 - Teals/Cyans
             "#005A5A", "#006161", "#006868", "#006F6F", "#007676", "#007D7D", "#008484", "#008B8B",
             "#009292", "#009999", "#00A0A0", "#00A7A7", "#00AEAE", "#00B5B5", "#00BCBC", "#00C3C3",
             "#00CACA", "#00D1D1", "#00D8D8", "#00DFDF", "#00E6E6", "#00EDED", "#00F4F4", "#00FBFB",
             "#47FFFF", "#77FFFF", "#A7FFFF", "#C7FFFF", "#D7FFFF", "#DFFFFF", "#E7FFFF", "#E0F7FA",
-            # Row 7
+            # Row 7 - Rainbow spectrum
             "#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#CCFF00", "#99FF00", "#66FF00",
             "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF",
             "#0099FF", "#0066FF", "#0033FF", "#0000FF", "#3300FF", "#6600FF", "#9900FF", "#CC00FF",
@@ -159,11 +186,9 @@ class WCAGCheckerApp:
         ]
         # fmt: on
 
-        self.load_window_geometry()
-        self.initialize_ui()
-        self.refresh_all_displays()
-        self._update_compliance_indicators()
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+    # =========================================================================
+    # WINDOW AND CONFIGURATION MANAGEMENT
+    # =========================================================================
 
     def on_closing(self):
         """Handles the window closing event."""
@@ -269,75 +294,9 @@ class WCAGCheckerApp:
         except Exception as e:
             messagebox.showerror("Save Error", f"Failed to save settings: {e}")
 
-    def random_colors(self):
-        """Sets all editable colors to random values, ensuring WCAG compliance."""
-
-        app_bg_rgb = self.hex_to_rgb(self.app_background_color)
-
-        min_contrast_button_vs_app_bg = 3.0  # WCAG AA for large text
-
-        # Pick a random base color for buttons and ensure contrast with app background.
-        random_base_color_hex = random.choice(self.balanced_colors)
-        random_base_color_rgb = self.hex_to_rgb(random_base_color_hex)
-
-        base_button_background_rgb, _ = self.adjust_color_for_contrast(
-            random_base_color_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
-        )
-
-        # Derive state-specific colors from base_button_background_rgb.
-        base_h, base_s, base_l = self._rgb_to_hsl(base_button_background_rgb)
-
-        for state_key, _ in self.button_state_definitions:
-            hue_val, saturation_val, lightness_val = base_h, base_s, base_l
-
-            if state_key == "default":
-                saturation_val = min(1.0, base_s * 1.05)
-            elif state_key == "hover":
-                lightness_val = max(0.0, base_l - 0.05)
-                hue_val = (base_h + 0.03) % 1.0
-                saturation_val = min(1.0, base_s * 1.15)
-            elif state_key == "focused":
-                lightness_val = min(1.0, base_l + 0.15)
-                hue_val = (base_h + 0.08) % 1.0
-                saturation_val = min(1.0, base_s * 1.1)
-            elif state_key == "active":
-                lightness_val = max(0.0, base_l - 0.25)
-                hue_val = (base_h - 0.1) % 1.0
-                saturation_val = min(1.0, base_s * 1.4)
-            elif state_key == "disabled":
-                saturation_val = base_s * 0.4
-                lightness_val = min(1.0, base_l + 0.1)
-
-            candidate_button_bg_rgb = self._hsl_to_rgb(
-                (hue_val, saturation_val, lightness_val)
-            )
-
-            # Ensure compliance with app_bg_rgb.
-            final_button_bg_rgb, _ = self.adjust_color_for_contrast(
-                candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
-            )
-
-            # Handle disabled state luminance.
-            if state_key == "disabled":
-                lum_final_button_bg = calculate_luminance(final_button_bg_rgb)
-                lum_app_bg = calculate_luminance(app_bg_rgb)
-                if lum_final_button_bg >= lum_app_bg or lum_final_button_bg < 0.15:
-                    final_button_bg_rgb = self.hex_to_rgb("#BED2E6")
-
-            self.state_color_settings[state_key]["background"] = self.rgb_to_hex(
-                final_button_bg_rgb
-            )
-
-            # Find compliant foreground color.
-            new_fg_rgb, _ = self.find_suitable_foreground_color(
-                final_button_bg_rgb, self.hex_to_rgb("#FFFFFF")
-            )
-            self.state_color_settings[state_key]["foreground"] = self.rgb_to_hex(
-                new_fg_rgb
-            )
-
-        self.refresh_all_displays()
-        self._update_compliance_indicators()
+    # =========================================================================
+    # UI INITIALIZATION AND COMPONENT CREATION
+    # =========================================================================
 
     def initialize_ui(self):
         """Sets up the main UI components by calling helper methods."""
@@ -598,6 +557,10 @@ class WCAGCheckerApp:
             command=self.restore_defaults,
         ).pack(side=tk.LEFT, padx=5)
 
+    # =========================================================================
+    # COLOR PALETTE AND IMAGE MANAGEMENT
+    # =========================================================================
+
     def _generate_colors_palette_image(self) -> Image.Image:
         """Generates a PIL Image containing the web safe colors palette."""
         num_colors = len(self.balanced_colors)
@@ -720,6 +683,10 @@ class WCAGCheckerApp:
                         self.update_color_from_hex_entry(state_key, "foreground")
                         break
 
+    # =========================================================================
+    # COLOR INPUT AND SELECTION HANDLERS
+    # =========================================================================
+
     def update_app_background_from_hex_entry(self, _event):
         """Updates the app background color from the hex entry field."""
         new_hex_color = self.app_background_hex_var.get()
@@ -775,6 +742,10 @@ class WCAGCheckerApp:
         if color[1]:
             self.state_color_settings[state_key][color_type] = color[1]
             self.refresh_all_displays()
+
+    # =========================================================================
+    # CORE WCAG COMPLIANCE LOGIC
+    # =========================================================================
 
     def check_contrast_compliance(
         self,
@@ -902,6 +873,10 @@ class WCAGCheckerApp:
                 fixes_applied += 1
         return fixes_applied
 
+    # =========================================================================
+    # UI UPDATE AND REFRESH METHODS
+    # =========================================================================
+
     def refresh_all_displays(self):
         """Refreshes all UI elements with the current color settings."""
         self.app_background_hex_var.set(self.app_background_color)
@@ -985,6 +960,10 @@ class WCAGCheckerApp:
                 all_compliant = False
         return all_compliant
 
+    # =========================================================================
+    # CONTROL BUTTON COMMANDS AND ACTIONS
+    # =========================================================================
+
     def validate_compliance(self):
         """Checks all color combinations and displays a compliance summary."""
         if self._update_compliance_indicators():
@@ -1042,6 +1021,80 @@ class WCAGCheckerApp:
             )
         self.validate_compliance()
 
+    def random_colors(self):
+        """Sets all editable colors to random values, ensuring WCAG compliance."""
+
+        app_bg_rgb = self.hex_to_rgb(self.app_background_color)
+
+        min_contrast_button_vs_app_bg = 3.0  # WCAG AA for large text
+
+        # Pick a random base color for buttons and ensure contrast with app background.
+        random_base_color_hex = random.choice(self.balanced_colors)
+        random_base_color_rgb = self.hex_to_rgb(random_base_color_hex)
+
+        base_button_background_rgb, _ = self.adjust_color_for_contrast(
+            random_base_color_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+        )
+
+        # Derive state-specific colors from base_button_background_rgb.
+        base_h, base_s, base_l = self._rgb_to_hsl(base_button_background_rgb)
+
+        for state_key, _ in self.button_state_definitions:
+            hue_val, saturation_val, lightness_val = base_h, base_s, base_l
+
+            if state_key == "default":
+                saturation_val = min(1.0, base_s * 1.05)
+            elif state_key == "hover":
+                lightness_val = max(0.0, base_l - 0.05)
+                hue_val = (base_h + 0.03) % 1.0
+                saturation_val = min(1.0, base_s * 1.15)
+            elif state_key == "focused":
+                lightness_val = min(1.0, base_l + 0.15)
+                hue_val = (base_h + 0.08) % 1.0
+                saturation_val = min(1.0, base_s * 1.1)
+            elif state_key == "active":
+                lightness_val = max(0.0, base_l - 0.25)
+                hue_val = (base_h - 0.1) % 1.0
+                saturation_val = min(1.0, base_s * 1.4)
+            elif state_key == "disabled":
+                saturation_val = base_s * 0.4
+                lightness_val = min(1.0, base_l + 0.1)
+
+            candidate_button_bg_rgb = self._hsl_to_rgb(
+                (hue_val, saturation_val, lightness_val)
+            )
+
+            # Ensure compliance with app_bg_rgb.
+            final_button_bg_rgb, _ = self.adjust_color_for_contrast(
+                candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+            )
+
+            # Handle disabled state luminance.
+            if state_key == "disabled":
+                lum_final_button_bg = calculate_luminance(final_button_bg_rgb)
+                lum_app_bg = calculate_luminance(app_bg_rgb)
+                if lum_final_button_bg >= lum_app_bg or lum_final_button_bg < 0.15:
+                    final_button_bg_rgb = self.hex_to_rgb("#BED2E6")
+
+            self.state_color_settings[state_key]["background"] = self.rgb_to_hex(
+                final_button_bg_rgb
+            )
+
+            # Find compliant foreground color.
+            new_fg_rgb, _ = self.find_suitable_foreground_color(
+                final_button_bg_rgb, self.hex_to_rgb("#FFFFFF")
+            )
+            self.state_color_settings[state_key]["foreground"] = self.rgb_to_hex(
+                new_fg_rgb
+            )
+
+        self.refresh_all_displays()
+        self._update_compliance_indicators()
+
+    # =========================================================================
+    # UTILITY METHODS
+    # =========================================================================
+
     def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
         """Converts an RGB color tuple to a hex string."""
         return "#{:02X}{:02X}{:02X}".format(*color)
@@ -1069,15 +1122,20 @@ class WCAGCheckerApp:
 
     def _rgb_to_hsl(self, rgb: Tuple[int, int, int]) -> Tuple[float, float, float]:
         """Converts an RGB color tuple to an HSL tuple (hue, saturation, lightness)."""
-        r, g, b = [c / 255.0 for c in rgb]
-        h, l, s = colorsys.rgb_to_hls(r, g, b)
-        return h, s, l
+        _r, _g, _b = [c / 255.0 for c in rgb]
+        _h, _l, _s = colorsys.rgb_to_hls(_r, _g, _b)
+        return _h, _s, _l
 
     def _hsl_to_rgb(self, hsl: Tuple[float, float, float]) -> Tuple[int, int, int]:
         """Converts an HSL color tuple (hue, saturation, lightness) to an RGB tuple."""
-        h, s, l = hsl
-        r, g, b = colorsys.hls_to_rgb(h, l, s)
-        return self._cast_color_list([int(c * 255) for c in (r, g, b)])
+        _h, _s, _l = hsl
+        _r, _g, _b = colorsys.hls_to_rgb(_h, _l, _s)
+        return self._cast_color_list([int(c * 255) for c in (_r, _g, _b)])
+
+
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
 
 
 def main() -> None:

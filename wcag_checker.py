@@ -51,14 +51,6 @@ def calculate_contrast_ratio(
     return (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
 
 
-def get_contrast_ratio(
-    foreground: Tuple[int, int, int], background: Tuple[int, int, int]
-) -> float:
-    """Gets the contrast ratio between a foreground and background color."""
-
-    return calculate_contrast_ratio(foreground, background)
-
-
 def is_compliant(
     foreground: Tuple[int, int, int],
     background: Tuple[int, int, int],
@@ -67,7 +59,7 @@ def is_compliant(
 ) -> bool:
     """Checks if a color combination meets a WCAG compliance level."""
 
-    contrast_ratio = get_contrast_ratio(foreground, background)
+    contrast_ratio = calculate_contrast_ratio(foreground, background)
 
     if level == "AA":
         if size == "normal":
@@ -784,7 +776,7 @@ class WCAGCheckerApp:
     ) -> Tuple[bool, float]:
         """Checks the contrast ratio and compliance for a color pair."""
 
-        contrast_ratio = get_contrast_ratio(foreground_color, background_color)
+        contrast_ratio = calculate_contrast_ratio(foreground_color, background_color)
         is_aa_compliant = is_compliant(
             foreground_color, background_color, level="AA", size="normal"
         )
@@ -848,7 +840,7 @@ class WCAGCheckerApp:
 
         for test_color_hex in high_contrast_colors:
             test_color_rgb = self.hex_to_rgb(test_color_hex)
-            contrast = get_contrast_ratio(test_color_rgb, background_color)
+            contrast = calculate_contrast_ratio(test_color_rgb, background_color)
             if contrast >= minimum_ratio:
                 return test_color_rgb, contrast
 
@@ -1005,34 +997,23 @@ class WCAGCheckerApp:
 
         if self._update_compliance_indicators():
             messagebox.showinfo(
-                "Compliance Check", "All color combinations are WCAG 2.2 AA compliant!"
+                "Compliance Check", "All color combinations are WCAG compliant!"
             )
         else:
             messagebox.showwarning(
                 "Compliance Issues",
-                "Some color combinations need improvement. See details above.",
+                "Some color combinations need improvement.",
             )
 
     def correct_issues(self):
         """Automatically corrects all non-compliant color combinations."""
 
-        total_fixes_applied = 0
-
         for state_key, _ in self.button_state_definitions:
-            total_fixes_applied += self._fix_colors_for_state(state_key)
+            self._fix_colors_for_state(state_key)
 
         self.refresh_all_displays()
 
-        if total_fixes_applied > 0:
-            messagebox.showinfo(
-                "Auto-Correction Complete",
-                f"Applied {total_fixes_applied} color adjustments to improve contrast.",
-            )
-            self.validate_compliance()
-        else:
-            messagebox.showinfo(
-                "No Corrections Needed", "All color combinations are already compliant!"
-            )
+        self.validate_compliance()
 
     def restore_defaults(self):
         """Restores color settings to the last loaded or default values."""
@@ -1153,7 +1134,7 @@ class WCAGCheckerApp:
                     fg_l = random.uniform(0.0, 0.02)  # Near black
 
                 candidate_fg_rgb = self._hsl_to_rgb((fg_h, fg_s, fg_l))
-                contrast = get_contrast_ratio(candidate_fg_rgb, state_bg_rgb)
+                contrast = calculate_contrast_ratio(candidate_fg_rgb, state_bg_rgb)
 
                 # Only use if contrast meets requirement
                 if contrast >= min_contrast_button_bg_vs_button_fg:

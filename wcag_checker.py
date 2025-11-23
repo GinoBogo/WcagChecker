@@ -386,17 +386,17 @@ class WCAGCheckerApp:
         ttk.Label(color_selection_frame, text=headers[0]).grid(
             row=0, column=0, sticky=tk.W, pady=5
         )
-        ttk.Label(color_selection_frame, text=headers[1]).grid(
-            row=0, column=1, sticky=tk.W, pady=5, padx=(0, 20)
+        ttk.Label(color_selection_frame, text=headers[1], justify=tk.CENTER).grid(
+            row=0, column=1, pady=5, padx=(0, 20)
         )
-        ttk.Label(color_selection_frame, text=headers[2]).grid(
-            row=0, column=3, sticky=tk.W, pady=5, padx=(0, 20)
+        ttk.Label(color_selection_frame, text=headers[2], justify=tk.CENTER).grid(
+            row=0, column=3, pady=5, padx=(0, 20)
         )
-        ttk.Label(color_selection_frame, text=headers[3]).grid(
-            row=0, column=5, sticky=tk.W, pady=5, padx=(0, 20)
+        ttk.Label(color_selection_frame, text=headers[3], justify=tk.CENTER).grid(
+            row=0, column=5, pady=5, padx=(0, 20)
         )
-        ttk.Label(color_selection_frame, text=headers[4]).grid(
-            row=0, column=6, sticky=tk.W, pady=5, padx=(0, 20)
+        ttk.Label(color_selection_frame, text=headers[4], justify=tk.CENTER).grid(
+            row=0, column=6, pady=5, padx=(0, 20)
         )
 
         # App Background

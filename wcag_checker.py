@@ -1061,52 +1061,45 @@ class WCAGCheckerApp:
         self.validate_compliance()
 
     def random_colors(self):
-        """Sets all editable colors to random values with more distinct state
-        variations."""
+        """
+        Generates random colors for all button states except Default, which
+        remains fixed.
+        """
 
         app_bg_rgb = self.hex_to_rgb(self.app_background_color)
-        min_contrast_button_vs_app_bg = 3.0
-
-        # Pick a random base color
-        random_base_color_hex = random.choice(self.balanced_colors)
-        random_base_color_rgb = self.hex_to_rgb(random_base_color_hex)
-
-        # Ensure base contrasts with app background
-        base_button_background_rgb, _ = self.adjust_color_for_contrast(
-            random_base_color_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+        default_button_rgb = self.hex_to_rgb(
+            self.state_color_settings["default"]["background"]
         )
+        base_h, base_s, base_l = self._rgb_to_hsl(default_button_rgb)
 
-        base_h, base_s, base_l = self._rgb_to_hsl(base_button_background_rgb)
+        min_contrast_button_vs_app_bg = 3.0
+        min_contrast_button_bg_vs_button_fg = 8.0
 
-        # More distinct transformations for each state
+        # Generate random transformations for each button state
         state_transformations = {
-            "default": {
-                "hue_shift": 0.0,
-                "saturation_mult": 1.0,
-                "lightness_shift": 0.0,
-            },
             "hover": {
-                "hue_shift": 0.02,  # Small hue shift
-                "saturation_mult": 1.2,  # +20% saturation
-                "lightness_shift": -0.15,  # -15% lightness (darker)
+                "hue_shift": random.uniform(0.02, 0.08),
+                "saturation_mult": random.uniform(1.1, 1.4),
+                "lightness_shift": random.uniform(-0.20, -0.08),
             },
             "focused": {
-                "hue_shift": 0.08,  # Noticeable hue shift
-                "saturation_mult": 1.1,  # +10% saturation
-                "lightness_shift": 0.25,  # +25% lightness (lighter)
+                "hue_shift": random.uniform(0.05, 0.12),
+                "saturation_mult": random.uniform(1.05, 1.25),
+                "lightness_shift": random.uniform(0.15, 0.30),
             },
             "active": {
-                "hue_shift": -0.12,  # Opposite hue direction
-                "saturation_mult": 1.4,  # +40% saturation (more vibrant)
-                "lightness_shift": -0.35,  # -35% lightness (much darker)
+                "hue_shift": random.uniform(-0.15, -0.05),
+                "saturation_mult": random.uniform(1.2, 1.5),
+                "lightness_shift": random.uniform(-0.35, -0.15),
             },
             "disabled": {
-                "hue_shift": 0.0,
-                "saturation_mult": 0.3,  # 70% de-saturation
-                "lightness_shift": 0.4,  # +40% lightness (much lighter)
+                "hue_shift": random.uniform(-0.05, 0.05),
+                "saturation_mult": random.uniform(0.2, 0.4),
+                "lightness_shift": random.uniform(0.25, 0.45),
             },
         }
 
+        # Generate random background colors for all states except Default
         for state_key, transforms in state_transformations.items():
             hue_val = (base_h + transforms["hue_shift"]) % 1.0
             saturation_val = min(1.0, base_s * transforms["saturation_mult"])
@@ -1116,23 +1109,23 @@ class WCAGCheckerApp:
                 (hue_val, saturation_val, lightness_val)
             )
 
-            # Ensure compliance with app background
+            # Ensure contrast with app background
             final_button_bg_rgb, _ = self.adjust_color_for_contrast(
                 candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
             )
 
-            # For disabled state, ensure it's sufficiently gray and distinct
+            # Special handling for disabled state
             if state_key == "disabled":
                 disabled_h, disabled_s, disabled_l = self._rgb_to_hsl(
                     final_button_bg_rgb
                 )
-                # Force more de-saturation and appropriate lightness
-                if disabled_s > 0.2:
+                if disabled_s > 0.3 or disabled_l < 0.6:
+                    target_saturation = random.uniform(0.15, 0.3)
+                    target_lightness = random.uniform(0.65, 0.8)
                     final_button_bg_rgb = self._hsl_to_rgb(
-                        (base_h, 0.2, max(0.6, disabled_l))
+                        (base_h, target_saturation, target_lightness)
                     )
 
-                # Final compliance check
                 final_button_bg_rgb, _ = self.adjust_color_for_contrast(
                     final_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
                 )
@@ -1141,10 +1134,39 @@ class WCAGCheckerApp:
                 final_button_bg_rgb
             )
 
-            # Find compliant foreground color
-            new_fg_rgb, _ = self.find_suitable_foreground_color(
-                final_button_bg_rgb, self.hex_to_rgb("#FFFFFF")
+        # Generate random foreground colors with high contrast
+        for state_key, _ in self.button_state_definitions:
+            state_bg_rgb = self.hex_to_rgb(
+                self.state_color_settings[state_key]["background"]
             )
+
+            # Try multiple times to find a color that meets 8:1 contrast
+            for attempt in range(10):
+                # Generate very light or very dark foreground
+                if random.random() < 0.5:
+                    fg_h = random.random()
+                    fg_s = random.uniform(0.0, 0.1)
+                    fg_l = random.uniform(0.98, 1.0)  # Near white
+                else:
+                    fg_h = random.random()
+                    fg_s = random.uniform(0.0, 0.1)
+                    fg_l = random.uniform(0.0, 0.02)  # Near black
+
+                candidate_fg_rgb = self._hsl_to_rgb((fg_h, fg_s, fg_l))
+                contrast = get_contrast_ratio(candidate_fg_rgb, state_bg_rgb)
+
+                # Only use if contrast meets requirement
+                if contrast >= min_contrast_button_bg_vs_button_fg:
+                    new_fg_rgb = candidate_fg_rgb
+                    break
+            else:
+                # Fallback: use pure black or white based on background lightness
+                state_bg_h, state_bg_s, state_bg_l = self._rgb_to_hsl(state_bg_rgb)
+                if state_bg_l > 0.5:
+                    new_fg_rgb = (0, 0, 0)  # Dark background -> black text
+                else:
+                    new_fg_rgb = (255, 255, 255)  # Light background -> white text
+
             self.state_color_settings[state_key]["foreground"] = self.rgb_to_hex(
                 new_fg_rgb
             )

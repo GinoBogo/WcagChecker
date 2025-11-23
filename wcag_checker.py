@@ -1072,7 +1072,7 @@ class WCAGCheckerApp:
         )
         base_h, base_s, base_l = self._rgb_to_hsl(default_button_rgb)
 
-        min_contrast_button_vs_app_bg = 3.0
+        min_contrast_button_bg_vs_app_bg = 3.0
         min_contrast_button_bg_vs_button_fg = 8.0
 
         # Generate random transformations for each button state
@@ -1111,7 +1111,7 @@ class WCAGCheckerApp:
 
             # Ensure contrast with app background
             final_button_bg_rgb, _ = self.adjust_color_for_contrast(
-                candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+                candidate_button_bg_rgb, app_bg_rgb, min_contrast_button_bg_vs_app_bg
             )
 
             # Special handling for disabled state
@@ -1127,7 +1127,7 @@ class WCAGCheckerApp:
                     )
 
                 final_button_bg_rgb, _ = self.adjust_color_for_contrast(
-                    final_button_bg_rgb, app_bg_rgb, min_contrast_button_vs_app_bg
+                    final_button_bg_rgb, app_bg_rgb, min_contrast_button_bg_vs_app_bg
                 )
 
             self.state_color_settings[state_key]["background"] = self.rgb_to_hex(
@@ -1200,12 +1200,6 @@ class WCAGCheckerApp:
         except ValueError:
             raise ValueError(f"Invalid hex color value: {hex_string}")
 
-    @staticmethod
-    def _cast_color_list(color_list: list[int]) -> Tuple[int, int, int]:
-        """Casts a list of 3 integers to a fixed-size tuple for type checking."""
-
-        return cast(Tuple[int, int, int], tuple(color_list))
-
     def _rgb_to_hsl(self, rgb: Tuple[int, int, int]) -> Tuple[float, float, float]:
         """Converts an RGB color tuple to an HSL tuple (hue, saturation, lightness)."""
 
@@ -1219,6 +1213,12 @@ class WCAGCheckerApp:
         _h, _s, _l = hsl
         _r, _g, _b = colorsys.hls_to_rgb(_h, _l, _s)
         return self._cast_color_list([int(c * 255) for c in (_r, _g, _b)])
+
+    @staticmethod
+    def _cast_color_list(color_list: list[int]) -> Tuple[int, int, int]:
+        """Casts a list of 3 integers to a fixed-size tuple for type checking."""
+
+        return cast(Tuple[int, int, int], tuple(color_list))
 
 
 # =============================================================================

@@ -409,8 +409,9 @@ class WCAGCheckerApp:
             textvariable=self.app_background_hex_var,
             font=("Courier", 10),
             width=10,
+            justify=tk.CENTER,
         )
-        self.app_background_hex_entry.grid(row=1, column=1, sticky=tk.W, padx=5)
+        self.app_background_hex_entry.grid(row=1, column=1, padx=5)
         self.app_background_hex_entry.bind(
             "<Return>", self.update_app_background_from_hex_entry
         )
@@ -435,11 +436,12 @@ class WCAGCheckerApp:
     def _create_color_row(self, parent, state_key, row):
         """Creates a single row of color selection widgets for a button state."""
 
-        bg_hex_var = tk.StringVar()
         bg_hex_entry = ttk.Entry(
-            parent, textvariable=bg_hex_var, font=("Courier", 10), width=10
+            parent, font=("Courier", 10), width=10, justify=tk.CENTER
         )
-        bg_hex_entry.grid(row=row, column=1, sticky=tk.W, padx=5)
+        bg_hex_var = tk.StringVar()
+        bg_hex_entry.config(textvariable=bg_hex_var)
+        bg_hex_entry.grid(row=row, column=1, padx=5)
         bg_hex_entry.bind(
             "<Return>",
             lambda _, s=state_key, t="background": self.update_color_from_hex_entry(
@@ -453,11 +455,12 @@ class WCAGCheckerApp:
             ),
         )
 
-        fg_hex_var = tk.StringVar()
         fg_hex_entry = ttk.Entry(
-            parent, textvariable=fg_hex_var, font=("Courier", 10), width=10
+            parent, font=("Courier", 10), width=10, justify=tk.CENTER
         )
-        fg_hex_entry.grid(row=row, column=3, sticky=tk.W, padx=5)
+        fg_hex_var = tk.StringVar()
+        fg_hex_entry.config(textvariable=fg_hex_var)
+        fg_hex_entry.grid(row=row, column=3, padx=5)
         fg_hex_entry.bind(
             "<Return>",
             lambda _, s=state_key, t="foreground": self.update_color_from_hex_entry(

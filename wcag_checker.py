@@ -33,6 +33,7 @@ FRAME_PADDING = 10  # Padding used in main_frame and controls_frame
 
 def calculate_luminance(color: Tuple[int, int, int]) -> float:
     """Calculates the relative luminance of an RGB color."""
+
     r, g, b = [c / 255.0 for c in color]
     r = r / 12.92 if r <= 0.03928 else ((r + 0.055) / 1.055) ** 2.4
     g = g / 12.92 if g <= 0.03928 else ((g + 0.055) / 1.055) ** 2.4
@@ -44,6 +45,7 @@ def calculate_contrast_ratio(
     foreground: Tuple[int, int, int], background: Tuple[int, int, int]
 ) -> float:
     """Calculates the contrast ratio between two RGB colors."""
+
     l1 = calculate_luminance(foreground)
     l2 = calculate_luminance(background)
     return (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
@@ -53,6 +55,7 @@ def get_contrast_ratio(
     foreground: Tuple[int, int, int], background: Tuple[int, int, int]
 ) -> float:
     """Gets the contrast ratio between a foreground and background color."""
+
     return calculate_contrast_ratio(foreground, background)
 
 
@@ -63,6 +66,7 @@ def is_compliant(
     size: str = "normal",
 ) -> bool:
     """Checks if a color combination meets a WCAG compliance level."""
+
     contrast_ratio = get_contrast_ratio(foreground, background)
 
     if level == "AA":
@@ -89,6 +93,7 @@ class WCAGCheckerApp:
 
     def __init__(self, root: tk.Tk):
         """Initializes the WCAG Checker GUI application."""
+
         self.root = root
         self.root.title("WCAG Checker")
         self.root.geometry("600x900")
@@ -106,6 +111,7 @@ class WCAGCheckerApp:
 
     def _initialize_application_state(self):
         """Initializes the application state variables and default settings."""
+
         self.button_state_definitions = [
             ("default", "Button Default"),
             ("hover", "Button Hover"),
@@ -141,6 +147,7 @@ class WCAGCheckerApp:
 
     def _initialize_color_palette(self):
         """Initializes the color palette with balanced colors."""
+
         # fmt: off
         self.balanced_colors = [
             # Row 0 - Grayscale
@@ -192,11 +199,13 @@ class WCAGCheckerApp:
 
     def on_closing(self):
         """Handles the window closing event."""
+
         self.save_window_geometry()
         self.root.destroy()
 
     def load_window_geometry(self):
         """Loads the window geometry from a config file if it exists."""
+
         config = cfg.ConfigParser()
         if os.path.exists(CONFIG_FILE):
             config.read(CONFIG_FILE)
@@ -205,6 +214,7 @@ class WCAGCheckerApp:
 
     def save_window_geometry(self):
         """Saves the current window geometry to a config file."""
+
         config = cfg.ConfigParser()
         config["WINDOW"] = {
             "geometry": self.root.geometry(),
@@ -214,6 +224,7 @@ class WCAGCheckerApp:
 
     def load_settings(self):
         """Loads color settings from a file."""
+
         filepath = filedialog.askopenfilename(
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
             title="Load Color Settings",
@@ -273,6 +284,7 @@ class WCAGCheckerApp:
 
     def save_settings(self):
         """Saves the current color settings to a file."""
+
         settings = {
             "app_background_color": self.app_background_color,
             "state_color_settings": self.state_color_settings,
@@ -300,6 +312,7 @@ class WCAGCheckerApp:
 
     def initialize_ui(self):
         """Sets up the main UI components by calling helper methods."""
+
         main_frame = self._create_main_frames()
         controls_frame = self._create_controls_frame(main_frame)
         self._create_color_palette_widgets(controls_frame)
@@ -312,6 +325,7 @@ class WCAGCheckerApp:
 
     def _create_main_frames(self):
         """Creates and configures the main application frames."""
+
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
         self.root.columnconfigure(0, weight=1)
@@ -324,6 +338,7 @@ class WCAGCheckerApp:
 
     def _create_controls_frame(self, parent):
         """Creates the frame for color selection and action buttons."""
+
         controls_frame = ttk.Frame(parent, padding="10")
         controls_frame.grid(row=0, column=0, sticky=tk.N + tk.E + tk.W)
         controls_frame.columnconfigure(0, weight=1)
@@ -332,6 +347,7 @@ class WCAGCheckerApp:
 
     def _create_preview_frame(self, parent):
         """Creates the frame for the application preview."""
+
         preview_frame = ttk.Frame(parent, padding="10")
         preview_frame.grid(row=1, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
         preview_frame.columnconfigure(0, weight=1)
@@ -340,6 +356,7 @@ class WCAGCheckerApp:
 
     def _create_color_palette_widgets(self, parent):
         """Creates the widgets for the color palette selection."""
+
         ttk.Label(parent, text="Color Palette", font=("Arial", 12, "bold")).grid(
             row=0, column=0, sticky=tk.W, pady=(0, 5)
         )
@@ -417,6 +434,7 @@ class WCAGCheckerApp:
 
     def _create_color_row(self, parent, state_key, row):
         """Creates a single row of color selection widgets for a button state."""
+
         bg_hex_var = tk.StringVar()
         bg_hex_entry = ttk.Entry(
             parent, textvariable=bg_hex_var, font=("Courier", 10), width=10
@@ -473,6 +491,7 @@ class WCAGCheckerApp:
 
     def _create_preview_area(self, parent):
         """Creates the application preview area with placeholder buttons."""
+
         ttk.Label(parent, text="Application Preview", font=("Arial", 12, "bold")).grid(
             row=0, column=0, sticky=tk.W
         )
@@ -511,6 +530,7 @@ class WCAGCheckerApp:
 
     def _create_control_buttons(self, parent):
         """Creates the Open, Save, Random, Validate, Correct, and Restore action buttons."""
+
         buttons_inner_frame = ttk.Frame(parent)
         buttons_inner_frame.pack(expand=True, anchor="center")
 
@@ -563,6 +583,7 @@ class WCAGCheckerApp:
 
     def _generate_colors_palette_image(self) -> Image.Image:
         """Generates a PIL Image containing the web safe colors palette."""
+
         num_colors = len(self.balanced_colors)
         rows = (num_colors + self.SWATCH_COLUMNS - 1) // self.SWATCH_COLUMNS
 
@@ -586,6 +607,7 @@ class WCAGCheckerApp:
 
     def _resize_palette_image(self, _event=None):
         """Resizes the palette image to fit the label width while maintaining aspect ratio."""
+
         if self._resizing:
             return
         self._resizing = True
@@ -619,6 +641,7 @@ class WCAGCheckerApp:
 
     def _on_palette_click(self, event):
         """Handles clicks on the color palette to select a color."""
+
         focused_widget = self.root.focus_get()
 
         # Check if the focused widget is one of our color entries
@@ -689,6 +712,7 @@ class WCAGCheckerApp:
 
     def update_app_background_from_hex_entry(self, _event):
         """Updates the app background color from the hex entry field."""
+
         new_hex_color = self.app_background_hex_var.get()
         try:
             # Validate hex color
@@ -705,6 +729,7 @@ class WCAGCheckerApp:
 
     def update_color_from_hex_entry(self, state_key: str, color_type: str):
         """Updates the color from a hex entry field."""
+
         ui_elements = self.state_ui_elements[state_key]
         hex_var = ui_elements[f"{color_type}_hex_var"]
         new_hex_color = hex_var.get()
@@ -724,6 +749,7 @@ class WCAGCheckerApp:
 
     def select_app_background(self):
         """Opens a color chooser to select the application background color."""
+
         color = colorchooser.askcolor(
             initialcolor=self.app_background_color,
             title="Choose Application Background Color",
@@ -734,6 +760,7 @@ class WCAGCheckerApp:
 
     def select_button_color(self, state_key: str, color_type: str):
         """Opens a color chooser for a button's background or foreground color."""
+
         current_color = self.state_color_settings[state_key][color_type]
         color = colorchooser.askcolor(
             initialcolor=current_color,
@@ -754,6 +781,7 @@ class WCAGCheckerApp:
         element_name: str,
     ) -> Tuple[bool, float]:
         """Checks the contrast ratio and compliance for a color pair."""
+
         contrast_ratio = get_contrast_ratio(foreground_color, background_color)
         is_aa_compliant = is_compliant(
             foreground_color, background_color, level="AA", size="normal"
@@ -768,6 +796,7 @@ class WCAGCheckerApp:
         max_iterations: int = 20,
     ) -> Tuple[Tuple[int, int, int], float]:
         """Adjusts a color to meet a minimum contrast ratio against another color."""
+
         adjusted_color = list(target_color)
         reference_luminance = calculate_luminance(reference_color)
         target_luminance = calculate_luminance(self._cast_color_list(adjusted_color))
@@ -809,6 +838,7 @@ class WCAGCheckerApp:
         minimum_ratio: float = 4.5,
     ) -> Tuple[Tuple[int, int, int], float]:
         """Finds a compliant foreground color for a given background."""
+
         high_contrast_colors = [
             "#FFFFFF",
             "#000000",
@@ -826,6 +856,7 @@ class WCAGCheckerApp:
 
     def _fix_colors_for_state(self, state_key: str) -> int:
         """Corrects the colors for a given state to meet compliance."""
+
         fixes_applied = 0
         background_color = self.state_color_settings[state_key]["background"]
         foreground_color = self.state_color_settings[state_key]["foreground"]
@@ -879,6 +910,7 @@ class WCAGCheckerApp:
 
     def refresh_all_displays(self):
         """Refreshes all UI elements with the current color settings."""
+
         self.app_background_hex_var.set(self.app_background_color)
 
         preview_hex = self.app_background_color
@@ -908,6 +940,7 @@ class WCAGCheckerApp:
         self, label: ttk.Label, is_compliant: bool, ratio: float
     ):
         """Updates a label to display compliance status and contrast ratio."""
+
         if is_compliant:
             label.config(
                 text=f"{ratio:7.2f}:1",
@@ -925,6 +958,7 @@ class WCAGCheckerApp:
 
     def _update_compliance_indicators(self) -> bool:
         """Checks all color combinations and updates the compliance indicators."""
+
         all_compliant = True
         # Check foreground-background contrast for each button state
         for state_key, description in self.button_state_definitions:
@@ -966,6 +1000,7 @@ class WCAGCheckerApp:
 
     def validate_compliance(self):
         """Checks all color combinations and displays a compliance summary."""
+
         if self._update_compliance_indicators():
             messagebox.showinfo(
                 "Compliance Check", "All color combinations are WCAG 2.2 AA compliant!"
@@ -978,6 +1013,7 @@ class WCAGCheckerApp:
 
     def correct_issues(self):
         """Automatically corrects all non-compliant color combinations."""
+
         total_fixes_applied = 0
 
         for state_key, _ in self.button_state_definitions:
@@ -998,6 +1034,7 @@ class WCAGCheckerApp:
 
     def restore_defaults(self):
         """Restores color settings to the last loaded or default values."""
+
         self.app_background_color = self.restore_app_background_color
         self.state_color_settings = copy.deepcopy(self.restore_state_color_settings)
         self.refresh_all_displays()
@@ -1097,10 +1134,12 @@ class WCAGCheckerApp:
 
     def rgb_to_hex(self, color: Tuple[int, int, int]) -> str:
         """Converts an RGB color tuple to a hex string."""
+
         return "#{:02X}{:02X}{:02X}".format(*color)
 
     def hex_to_rgb(self, hex_string: str) -> Tuple[int, int, int]:
         """Converts a hex color string to an RGB tuple."""
+
         color_string = hex_string.strip().lstrip("#")
 
         if len(color_string) != 6:
@@ -1118,16 +1157,19 @@ class WCAGCheckerApp:
     @staticmethod
     def _cast_color_list(color_list: list[int]) -> Tuple[int, int, int]:
         """Casts a list of 3 integers to a fixed-size tuple for type checking."""
+
         return cast(Tuple[int, int, int], tuple(color_list))
 
     def _rgb_to_hsl(self, rgb: Tuple[int, int, int]) -> Tuple[float, float, float]:
         """Converts an RGB color tuple to an HSL tuple (hue, saturation, lightness)."""
+
         _r, _g, _b = [c / 255.0 for c in rgb]
         _h, _l, _s = colorsys.rgb_to_hls(_r, _g, _b)
         return _h, _s, _l
 
     def _hsl_to_rgb(self, hsl: Tuple[float, float, float]) -> Tuple[int, int, int]:
         """Converts an HSL color tuple (hue, saturation, lightness) to an RGB tuple."""
+
         _h, _s, _l = hsl
         _r, _g, _b = colorsys.hls_to_rgb(_h, _l, _s)
         return self._cast_color_list([int(c * 255) for c in (_r, _g, _b)])
@@ -1140,6 +1182,7 @@ class WCAGCheckerApp:
 
 def main() -> None:
     """Main function to run the WCAG Checker application."""
+
     root = tk.Tk()
     WCAGCheckerApp(root)
     root.mainloop()

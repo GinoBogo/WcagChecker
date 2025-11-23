@@ -365,7 +365,9 @@ class WCAGCheckerApp:
         self.palette_image_pil = self._generate_colors_palette_image()
         self.palette_image_tk = ImageTk.PhotoImage(self.palette_image_pil)
 
-        self.palette_image_label = ttk.Label(parent, image=self.palette_image_tk)
+        self.palette_image_label = ttk.Label(
+            parent, image=self.palette_image_tk, cursor="cross"
+        )
         self.palette_image_label.grid(row=1, column=0, sticky=tk.W + tk.E, pady=(0, 5))
         self.palette_image_label.bind("<Configure>", self._resize_palette_image)
         self.palette_image_label.bind("<Button-1>", self._on_palette_click)

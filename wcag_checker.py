@@ -123,9 +123,7 @@ class WCAGCheckerApp:
         }
 
         self.app_background_color = self.default_app_background_color
-        self.state_color_settings = copy.deepcopy(
-            self.default_state_color_settings
-        )
+        self.state_color_settings = copy.deepcopy(self.default_state_color_settings)
 
         self.restore_app_background_color = self.default_app_background_color
         self.restore_state_color_settings = copy.deepcopy(

@@ -123,7 +123,9 @@ class WCAGCheckerApp:
         }
 
         self.app_background_color = self.default_app_background_color
-        self.state_color_settings = copy.deepcopy(self.default_state_color_settings)
+        self.state_color_settings = copy.deepcopy(
+            self.default_state_color_settings
+        )
 
         self.restore_app_background_color = self.default_app_background_color
         self.restore_state_color_settings = copy.deepcopy(
@@ -789,8 +791,12 @@ class WCAGCheckerApp:
         minimum_ratio: float = 4.5,
         max_iterations: int = 100,  # Increased iterations for robustness
     ) -> Tuple[Tuple[int, int, int], float]:
-        """Adjusts a color to meet a minimum contrast ratio against another color using HSL lightness adjustment.
-        Prioritizes moving lightness away from the reference color's lightness."""
+        """Adjusts a color to meet a minimum contrast ratio against another
+        color using HSL lightness adjustment.
+
+        Prioritizes moving lightness away from the reference color's
+        lightness.
+        """
 
         # Keep adjusted_hsl as a tuple, to avoid type checker confusion
         adjusted_h, adjusted_s, adjusted_l = self._rgb_to_hsl(target_color)
@@ -803,7 +809,8 @@ class WCAGCheckerApp:
         if best_contrast >= minimum_ratio:
             return best_color, best_contrast
 
-        # Initial direction: move lightness of target color away from reference color's lightness
+        # Initial direction: move lightness of target color away from
+        # the reference color's lightness.
         target_luminance = calculate_luminance(
             self._hsl_to_rgb((adjusted_h, adjusted_s, adjusted_l))
         )  # Use current HSL
@@ -835,7 +842,8 @@ class WCAGCheckerApp:
             if current_contrast >= minimum_ratio:
                 return best_color, best_contrast
 
-            # If we hit a lightness boundary or contrast starts to decrease, reverse direction
+            # If we hit a lightness boundary or contrast starts to
+            # decrease, reverse direction.
             if (
                 (new_lightness == 0.0 and lightness_adjustment_step < 0)
                 or (new_lightness == 1.0 and lightness_adjustment_step > 0)
@@ -844,7 +852,8 @@ class WCAGCheckerApp:
                 lightness_adjustment_step = (
                     -lightness_adjustment_step
                 )  # Reverse direction
-                # If we reversed and are still not compliant, and step is very small, we might be stuck
+                # If we reversed and are not compliant, and the step is
+                # very small, we might be stuck.
                 if abs(lightness_adjustment_step) < 0.001:
                     break
 

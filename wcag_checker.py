@@ -373,24 +373,30 @@ class WCAGCheckerApp:
         )
         # Configure columns for alignment
         for i in range(7):
-            color_selection_frame.columnconfigure(i, weight=1 if i > 4 else 0)
+            color_selection_frame.columnconfigure(i, weight=1)
 
         # Headers
-        headers = ["", "Background", "Foreground", "BG Compliance", "FG Compliance"]
+        headers = [
+            "",
+            "Background\nColor",
+            "Foreground\nColor",
+            "Background\nCompliance",
+            "Foreground\nCompliance",
+        ]
         ttk.Label(color_selection_frame, text=headers[0]).grid(
             row=0, column=0, sticky=tk.W, pady=5
         )
         ttk.Label(color_selection_frame, text=headers[1]).grid(
-            row=0, column=1, columnspan=2, sticky=tk.W, pady=5, padx=(0, 20)
+            row=0, column=1, sticky=tk.W, pady=5, padx=(0, 20)
         )
         ttk.Label(color_selection_frame, text=headers[2]).grid(
-            row=0, column=3, columnspan=2, sticky=tk.W, pady=5
+            row=0, column=3, sticky=tk.W, pady=5, padx=(0, 20)
         )
         ttk.Label(color_selection_frame, text=headers[3]).grid(
-            row=0, column=5, sticky=tk.W, pady=5
+            row=0, column=5, sticky=tk.W, pady=5, padx=(0, 20)
         )
         ttk.Label(color_selection_frame, text=headers[4]).grid(
-            row=0, column=6, sticky=tk.W, pady=5
+            row=0, column=6, sticky=tk.W, pady=5, padx=(0, 20)
         )
 
         # App Background
@@ -532,42 +538,42 @@ class WCAGCheckerApp:
             buttons_inner_frame,
             text="Open",
             cursor="hand2",
-            width=10,
+            width=8,
             command=self.load_settings,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Save",
             cursor="hand2",
-            width=10,
+            width=8,
             command=self.save_settings,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Random",
             cursor="hand2",
-            width=10,
+            width=8,
             command=self.random_colors,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Validate",
             cursor="hand2",
-            width=10,
+            width=8,
             command=self.validate_compliance,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Correct",
             cursor="hand2",
-            width=10,
+            width=8,
             command=self.correct_issues,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             buttons_inner_frame,
             text="Restore",
             cursor="hand2",
-            width=10,
+            width=8,
             command=self.restore_defaults,
         ).pack(side=tk.LEFT, padx=5)
 
